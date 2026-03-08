@@ -2,6 +2,17 @@ float UNDERCOVER_BrakesAtValue = 0.0;
 float UNDERCOVER_StaticGripAtValue = 0.0;
 float UNDERCOVER_RollCenterAtValue = 0.0;
 float UNDERCOVER_AeroCGAtValue = 0.0;
+float UNDERCOVER_AeroCoeffAtValue = 0.0;
+float UNDERCOVER_SuspensionAtValue = 0.0;
+float UNDERCOVER_SteeringAtValue = 0.0;
+
+namespace Physics {
+	namespace Info {
+		float AerodynamicDownforce(const Attrib::Gen::car_tuning &chassis, const float speed) {
+			return speed * 2 * chassis.GetLayout()->AERO_COEFFICIENT.GetValue(UNDERCOVER_AeroCoeffAtValue) * 1000.0f;
+		}
+	}
+}
 
 const float ZeroDegreeTable[6] = {0.0f};
 float TwoDegreeTable[] = {0.0f, 1.2f, 2.3f, 3.0f, 3.0f, 2.8f};
@@ -644,6 +655,7 @@ void SuspensionRacer::SetCOG(float extra_bias, float extra_ride) {
 	irb->GetDimension(&dim);
 
 	//float fwbias = (mCarInfo.GetLayout()->FRONT_WEIGHT_BIAS + extra_bias) * 0.01f; // todo is there no equivalent for this?
+	//float fwbias = (*(float*)Attrib::Instance::GetAttributePointer(&mCarInfo, Attrib::StringHash32("FRONT_WEIGHT_BIAS"), 0) + extra_bias) * 0.01f;
 	float fwbias = extra_bias * 0.01f;
 	if (mNumWheelsOnGround == 0) {
 		fwbias = 0.5f;
@@ -724,7 +736,7 @@ void SuspensionRacer::DoAerodynamics(const State &state, float drag_pct, float a
 
 		float forwardness = UMath::Max(UMath::Dot(movement_dir, state.GetForwardVector()), 0.0f);
 		forwardness = UMath::Max(AeroDropOffMin, UMath::Pow(forwardness, AeroDropOff));
-		float downforce = aero_pct * upness * forwardness * Physics::Info::AerodynamicDownforce(mAttributes, state.speed); // todo
+		float downforce = aero_pct * upness * forwardness * Physics::Info::AerodynamicDownforce(mCarInfo, state.speed); // todo
 		// lower downforce when car is in air
 		if (state.ground_effect == 0.0f) {
 			downforce *= 0.8f;
@@ -752,6 +764,933 @@ void SuspensionRacer::DoAerodynamics(const State &state, float drag_pct, float a
 			UMath::Rotate(force, state.matrix, force);
 			irb->ResolveForce(&force, &aero_center);
 		}
+	}
+}
+
+// Credits: Brawltendo
+void SuspensionRacer::Differential::CalcSplit(bool locked) {
+	if (!has_traction[0] || !has_traction[1] || locked || (factor <= 0.0f)) {
+		torque_split[0] = bias;
+		torque_split[1] = 1.0f - bias;
+		return;
+	}
+	float av_0 = angular_vel[0] * (1.0f - bias);
+	float av_1 = angular_vel[1] * bias;
+	float combined_av = UMath::Abs(av_0 + av_1);
+
+	if (combined_av > FLOAT_EPSILON) {
+		torque_split[0] = ((1.0f - factor) * bias) + ((factor * UMath::Abs(av_1)) / combined_av);
+		torque_split[1] = ((1.0f - factor) * (1.0f - bias)) + ((factor * UMath::Abs(av_0)) / combined_av);
+	} else {
+		torque_split[0] = bias;
+		torque_split[1] = 1.0f - bias;
+	}
+
+	torque_split[0] = UMath::Clamp(torque_split[0], 0.0f, 1.0f);
+	torque_split[1] = UMath::Clamp(torque_split[1], 0.0f, 1.0f);
+}
+
+// Credits: Brawltendo
+void SuspensionRacer::DoDriveForces(State &state) {
+	if (!mTransmission) {
+		return;
+	}
+
+	float drive_torque = mTransmission->GetDriveTorque();
+	SuspensionRacer::Differential center_diff{};
+	if (drive_torque == 0.0f) {
+		return;
+	}
+
+	center_diff.factor = mCarInfo.GetLayout()->DIFFERENTIAL[2];
+	if (center_diff.factor > 0.0f) {
+		center_diff.bias = mCarInfo.GetLayout()->TORQUE_SPLIT;
+		center_diff.angular_vel[0] = mTires[0]->GetAngularVelocity() + mTires[1]->GetAngularVelocity();
+		center_diff.angular_vel[1] = mTires[2]->GetAngularVelocity() + mTires[3]->GetAngularVelocity();
+		center_diff.has_traction[0] = mTires[0]->IsOnGround() || mTires[1]->IsOnGround();
+		center_diff.has_traction[1] = mTires[2]->IsOnGround() || mTires[3]->IsOnGround();
+		center_diff.CalcSplit(false);
+	} else {
+		center_diff.torque_split[0] = mCarInfo.GetLayout()->TORQUE_SPLIT;
+		center_diff.torque_split[1] = 1.0f - center_diff.torque_split[0];
+	}
+
+	for (unsigned int axle = 0; axle < 2; ++axle) {
+		float axle_torque = drive_torque * center_diff.torque_split[axle];
+		if (UMath::Abs(axle_torque) > FLOAT_EPSILON) {
+			SuspensionRacer::Differential diff{};
+			diff.bias = 0.5f;
+
+			float fwd_slip = 0.0f;
+			float lat_slip = 0.0f;
+
+			float traction_control[2] = {1.0f, 1.0f};
+			float traction_boost[2] = {1.0f, 1.0f};
+			diff.factor = mCarInfo.GetLayout()->DIFFERENTIAL[axle];
+
+			for (unsigned int i = 0; i < 2; ++i) {
+				unsigned int tire = axle * 2 + i;
+				diff.angular_vel[i] = mTires[tire]->GetAngularVelocity();
+				diff.has_traction[i] = mTires[tire]->IsOnGround();
+
+				fwd_slip += center_diff.torque_split[axle] * mTires[tire]->GetCurrentSlip() * 0.5f;
+				lat_slip += center_diff.torque_split[axle] * mTires[tire]->GetLateralSpeed() * 0.5f;
+			}
+
+			bool locked_diff = false;
+			if ((mBurnOut.GetState() & 1) != 0) {
+				traction_boost[1] = mBurnOut.GetTraction();
+				diff.bias = mBurnOut.GetTraction() * 0.5f;
+				locked_diff = true;
+			} else if ((mBurnOut.GetState() & 2) != 0) {
+				traction_boost[0] = mBurnOut.GetTraction();
+				diff.bias = 1.0f - mBurnOut.GetTraction() * 0.5f;
+				locked_diff = true;
+			} else {
+				float delta_lat_slip = lat_slip - state.local_vel.x;
+				if (delta_lat_slip * state.steer_input > 0.0f && axle_torque * fwd_slip > 0.0f) {
+					float delta_fwd_slip = fwd_slip - state.local_vel.z;
+					float traction_control_limit = UMath::Ramp(delta_fwd_slip, 1.0f, 20.0f);
+
+					if (traction_control_limit > 0.0f) {
+						float traction_angle = UMath::Abs(state.steer_input * UMath::Atan2d(delta_lat_slip, UMath::Abs(delta_fwd_slip)));
+						traction_control_limit *= UMath::Ramp(traction_angle, 1.0f, 16.0f);
+						if (traction_control_limit > 0.0f) {
+							if (delta_lat_slip > 0.0f) {
+								traction_control[1] = 1.0f - traction_control_limit;
+								traction_control[0] = 1.0f - traction_control_limit * 0.5f;
+								traction_boost[0] = traction_control_limit + 1.0f;
+							} else {
+								traction_control[0] = 1.0f - traction_control_limit;
+								traction_control[1] = 1.0f - traction_control_limit * 0.5f;
+								traction_boost[1] = traction_control_limit + 1.0f;
+							}
+						}
+					}
+				}
+			}
+			diff.CalcSplit(locked_diff);
+
+			for (unsigned int i = 0; i < 2; ++i) {
+				unsigned int tire = axle * 2 + i;
+				if (mTires[tire]->IsOnGround()) {
+					mTires[tire]->ApplyDriveTorque(axle_torque * diff.torque_split[i] * traction_control[i]);
+					mTires[tire]->ScaleTractionBoost(traction_boost[i]);
+				}
+			}
+		}
+	}
+}
+
+// Calculates artificial steering for when the car is touching a wall
+// Credits: Brawltendo
+void SuspensionRacer::DoWallSteer(State &state) {
+	float wall = mSteering.WallNoseTurn;
+	// nose turn is applied when the car is perpendicular to the wall
+	// allows the player to easily turn their car away from the wall after a head-on crash without reversing
+	if (wall != 0.0f && mNumWheelsOnGround > 2 && state.gas_input > 0.0f) {
+		float dW = state.steer_input * state.gas_input * 0.125f;
+		if (wall * dW < 0.0f) {
+			return;
+		}
+
+		dW *= UMath::Abs(wall);
+		UMath::Vector3 chg = {};
+		chg.y = dW;
+		UMath::Rotate(chg, state.matrix, chg);
+		UMath::Add(state.angular_vel, chg, chg);
+		mRB->SetAngularVelocity(&chg);
+	}
+
+	wall = mSteering.WallSideTurn;
+	// side turn is only applied when in reverse and if touching a wall parallel to the car
+	// it helps the player move their car away from a wall when backing up
+	if (wall * state.steer_input * state.gas_input > 0.0f && mNumWheelsOnGround > 2 && !state.gear) {
+		float dW = -state.steer_input * state.gas_input * 0.125f;
+		dW *= UMath::Abs(wall);
+
+		UMath::Vector3 chg = {};
+		chg.y = dW;
+		UMath::Rotate(chg, state.matrix, chg);
+		UMath::Add(state.angular_vel, chg, chg);
+		mRB->SetAngularVelocity(&chg);
+	}
+}
+
+// Credits: Brawltendo
+void SuspensionRacer::ComputeAckerman(const float steering, const State &state, UMath::Vector4 *left, UMath::Vector4 *right) const {
+	int going_right = true;
+	float wheelbase = mCarInfo.GetLayout()->WHEEL_BASE;
+	float wheeltrack = mCarInfo.GetLayout()->TRACK_WIDTH.Front;
+	float steer_inside = ANGLE2RAD(steering);
+
+	// clamp steering angle <= 180 degrees
+	if (steer_inside > (float)M_PI)
+		steer_inside -= (float)(std::numbers::pi*2);
+
+	// negative steering angle indicates a left turn
+	if (steer_inside < 0.0f) {
+		going_right = false;
+		steer_inside = -steer_inside;
+	}
+
+	// Ackermann steering geometry causes the outside wheel to have a smaller turning angle than the inside wheel
+	// this is determined by the distance of the wheel to the center of the rear axle
+	// this equation is a modified version of 1/tan(L/(R+T/2)), where L is the wheelbase, R is the steering radius, and T is the track width
+	float steer_outside = (wheelbase * steer_inside) / (wheeltrack * steer_inside + wheelbase);
+	float steer0, steer1; // 0 - right, 1 - left
+	if (going_right) {
+		steer0 = steer_inside;
+		steer1 = steer_outside;
+	} else {
+		steer1 = -steer_inside;
+		steer0 = -steer_outside;
+	}
+
+	float ca, sa;
+	// calculate forward vector for front wheels
+	UMath::Vector3 r;
+	ca = cosf(steer0);
+	sa = sinf(steer0);
+	r.z = ca;
+	r.x = sa;
+	r.y = 0.0f;
+	UMath::Rotate(r, state.matrix, r);
+	*right = UMath::Vector4Make(r, steer0);
+
+	UMath::Vector3 l;
+	ca = cosf(steer1);
+	sa = sinf(steer1);
+	l.z = ca;
+	l.x = sa;
+	l.y = 0.0f;
+	UMath::Rotate(l, state.matrix, l);
+	*left = UMath::Vector4Make(l, steer1);
+}
+
+// Credits: Brawltendo
+float SuspensionRacer::DoAISteering(State &state) {
+	mSteering.Maximum = 45.0f;
+	if (state.driver_style != STYLE_DRAG) {
+		mSteering.Maximum = mCarInfo.GetLayout()->STEERING.GetValue(UNDERCOVER_SteeringAtValue) * 45.0f;
+	}
+
+	return DEG2ANGLE(mSteering.Maximum * state.steer_input);
+}
+
+// Credits: Brawltendo
+float SuspensionRacer::CalculateMaxSteering(State &state, ISteeringWheel::SteeringType steer_type) {
+	const float steer_input = state.steer_input;
+
+	// max possible steering output scales with the car's forward speed
+	float max_steering = SteeringRangeTable.GetValue(state.local_vel.z);
+	// there are 2 racing wheel input types, one scales with speed and the other doesn't
+	if (steer_type == ISteeringWheel::kWheelSpeedSensitive) {
+		max_steering = SteeringWheelRangeTable.GetValue(state.local_vel.z);
+	} else if (steer_type == ISteeringWheel::kWheelSpeedInsensitive) {
+		return MAX_STEERING;
+	}
+
+	float tbcoeff = 1.0f - (state.gas_input + 1.0f - (state.brake_input + state.ebrake_input) * 0.5f) * 0.5f;
+	max_steering *= BrakeSteeringRangeMultiplier * tbcoeff * SteeringSpeedTable.GetValue(state.local_vel.z) + 1.0f;
+	max_steering *= SteeringRangeCoeffTable.GetValue(std::abs(mSteering.InputAverage.GetValue()));
+
+	const Physics::Tunings *tunings = GetVehicle()->GetTunings();
+	// todo
+	//if (tunings) {
+	//	max_steering *= tunings->Value[Physics::Tunings::STEERING] * Tweak_TuningSteering_Ratio + 1.0f;
+	//}
+
+	float collision_coeff;
+	// reduce steering range after collisions
+	if (mSteering.CollisionTimer > 0.0f) {
+		float secs = PostCollisionSteerReductionDuration - mSteering.CollisionTimer;
+		if (secs < PostCollisionSteerReductionDuration && secs > 0.0f) {
+			float speed_coeff = std::min(1.0f, state.local_vel.z / (MPH2MPS(170.0f) * 0.7f));
+			speed_coeff = 1.0f - speed_coeff;
+			collision_coeff = PostCollisionSteerReductionTable.GetValue(secs);
+			max_steering *= speed_coeff * (1.0f - collision_coeff) + collision_coeff;
+		}
+	}
+
+	float yaw_left = ANGLE2DEG(mTires[2]->GetSlipAngle());
+	float yaw_right = ANGLE2DEG(mTires[3]->GetSlipAngle());
+	// clamp the max steering range to [rear slip, MAX_STEERING] when countersteering
+	if (steer_input > 0.0f && yaw_right > 0.0f) {
+		max_steering = UMath::Max(max_steering, yaw_right);
+		max_steering = UMath::Min(max_steering, MAX_STEERING);
+	} else if (steer_input < 0.0f && yaw_left < 0.0f) {
+		max_steering = UMath::Max(max_steering, -yaw_left);
+		max_steering = UMath::Min(max_steering, MAX_STEERING);
+	} else if (std::abs(mSteering.InputAverage.GetValue()) >= HardTurnSteeringThreshold) {
+		max_steering = std::max(max_steering, mSteering.LastMaximum - state.time * HardTurnTightenSpeed);
+	}
+
+	max_steering = std::min(max_steering, MAX_STEERING);
+	mSteering.LastMaximum = max_steering;
+	return max_steering;
+}
+
+// Credits: Brawltendo
+float SuspensionRacer::CalculateSteeringSpeed(State &state) {
+	// get a rough approximation of how fast the player is steering
+	// this ends up creating a bit of a difference in how fast you can actually steer on a controller under normal circumstances
+	// using a keyboard will always give you the fastest steering possible
+	float steer_input_speed = (state.steer_input - mSteering.LastInput) / state.time;
+
+	mSteering.InputSpeedCoeffAverage.Record(SteeringInputSpeedCoeffTable.GetValue(std::abs(steer_input_speed)), Sim::GetTime());
+
+	// steering speed scales with vehicle forward speed
+	float steer_speed = 180.0f;
+	steer_speed *= (SteeringSpeedTable.GetValue(state.local_vel.z));
+	steer_speed *= mSteering.InputSpeedCoeffAverage.GetValue();
+
+	float steer_input = std::abs(mSteering.InputAverage.GetValue());
+	return steer_speed * SteeringInputCoeffTable.GetValue(steer_input);
+}
+
+// Credits: Brawltendo
+float SuspensionRacer::DoHumanSteering(State &state) {
+	float steer_input = state.steer_input;
+	float steer = mSteering.Previous;
+
+	if (steer >= 180.0f) {
+		steer -= 360.0f;
+	}
+
+	float steering_coeff = mCarInfo.GetLayout()->STEERING.GetValue(UNDERCOVER_SteeringAtValue);
+	ISteeringWheel::SteeringType steer_type = ISteeringWheel::kGamePad;
+
+	IPlayer *player = GetOwner()->GetPlayer();
+	if (player) {
+		ISteeringWheel *device = player->GetSteeringDevice();
+
+		if (device && device->IsConnected()) {
+			steer_type = device->GetSteeringType();
+		}
+	}
+
+	float max_steering;
+	float newsteer = steer_input * CalculateMaxSteering(state, steer_type) * steering_coeff;
+	newsteer = bClamp(newsteer, -45.0f, 45.0f);
+
+	if (steer_type == ISteeringWheel::kGamePad) {
+		int steer_remapping = SteerInputRemapping;
+		steer_input = SteerInputRemapTables[steer_remapping].GetValue(steer_input);
+		float steering_speed = (CalculateSteeringSpeed(state) * steering_coeff) * state.time;
+		float max_diff = steer + steering_speed;
+		newsteer = bClamp(newsteer, steer - steering_speed, max_diff);
+		// this is absolutely pointless but it's part of the steering calculation for whatever reason
+		if (std::abs(newsteer) < 0.0f) {
+			newsteer = 0.0f;
+		}
+	}
+	mSteering.LastInput = steer_input;
+	mSteering.Previous = newsteer;
+
+	// speedbreaker increases the current steering angle beyond the normal maximum
+	// this change is instant, so the visual steering angle while using speedbreaker doesn't accurately represent this
+	// instead it interpolates to this value so it looks nicer
+	if (mGameBreaker > 0.0f) {
+		newsteer = UMath::Lerp(newsteer, state.steer_input * Tweak_GameBreakerMaxSteer, mGameBreaker);
+	}
+
+	mSteering.InputAverage.Record(mSteering.LastInput, Sim::GetTime());
+	return DEG2ANGLE(newsteer);
+}
+
+// Credits: Brawltendo
+void SuspensionRacer::DoSteering(State &state, UMath::Vector3 &right, UMath::Vector3 &left) {
+	float truesteer;
+	UMath::Vector4 r4;
+	UMath::Vector4 l4;
+
+	if (mHumanAI && mHumanAI->IsPlayerSteering()) {
+		truesteer = DoHumanSteering(state);
+	} else {
+		truesteer = DoAISteering(state);
+	}
+
+	ComputeAckerman(truesteer, state, &l4, &r4);
+	right = Vector4To3(r4);
+	left = Vector4To3(l4);
+	mSteering.Wheels[0] = l4.w;
+	mSteering.Wheels[1] = r4.w;
+	DoWallSteer(state);
+}
+
+// Credits: Brawltendo
+float SuspensionRacer::CalcYawControlLimit(float speed) const {
+	if (mTransmission) {
+		float maxspeed = mTransmission->GetMaxSpeedometer();
+		if (maxspeed <= 0.0f) {
+			return 0.0f;
+		}
+		float percent = UMath::Min(UMath::Abs(speed) / maxspeed, 1.0f);
+
+		// todo!! these are different in uc!
+		unsigned int numunits = UNDERCOVER_YawControl.size();
+		if (numunits > 1) {
+			float ratio = (numunits - 1) * percent;
+			unsigned int index1 = static_cast<unsigned int>(ratio);
+			ratio -= index1;
+			unsigned int index2 = UMath::Min(numunits - 1, index1 + 1);
+			float a = UNDERCOVER_YawControl[index1];
+			float b = UNDERCOVER_YawControl[index2];
+			return a + (b - a) * ratio;
+		}
+	}
+	return UNDERCOVER_YawControl[0];
+}
+
+static float LowSpeedSpeed = 0.0f;
+static float HighSpeedSpeed = 30.0f;
+static float MaxYawBonus = 0.35f;
+static float LowSpeedYawBoost = 0.0f;
+static float HighSpeedYawBoost = 1.0f;
+static float YawEBrakeThreshold = 0.5f;
+static float YawAngleThreshold = 20.0f;
+
+// Credits: Brawltendo
+float YawFrictionBoost(float yaw, float ebrake, float speed, float yawcontrol, float grade) {
+	yaw = std::abs(yaw);
+	float retval = 1.0f;
+	retval += std::abs(grade);
+	if (ebrake > YawEBrakeThreshold && yaw < DEG2RAD(YawAngleThreshold))
+		return retval;
+
+	float speed_factor = (speed - LowSpeedSpeed) / (HighSpeedSpeed - LowSpeedSpeed);
+	float boost = LowSpeedYawBoost + (HighSpeedYawBoost - LowSpeedYawBoost) * speed_factor;
+	float bonus = yaw * yawcontrol * boost;
+	if (bonus > MaxYawBonus)
+		bonus = MaxYawBonus;
+	return retval + bonus;
+}
+
+GraphEntry<float> DriftStabilizerData[] = {{0.0f, 0.0f},        {0.2617994f, 0.1f},  {0.52359879f, 0.45f}, {0.78539819f, 0.85f},
+										   {1.0471976f, 0.95f}, {1.5533431f, 1.15f}, {1.5707964f, 0.0f}};
+float DriftRearFrictionData[] = {1.1f, 0.95f, 0.87f, 0.77f, 0.67f, 0.6f, 0.51f, 0.43f, 0.37f, 0.34f};
+tGraph<float> DriftStabilizerTable(DriftStabilizerData, 7);
+Table DriftRearFrictionTable(DriftRearFrictionData, 10, 0.0f, 1.0f);
+static const float DriftRotationalStabalizer = 4.0f;
+static const float DriftYawAngularVelCoeff = 0.5f;
+static const float Tweak_MinDriftSpeedMPH = 30.0f;
+static const float Tweak_DriftSlipAngle = 12.0f;
+static const float Tweak_DriftEnterSpeed = 30.0f;
+static const float Tweak_DriftExitSpeed = 30.0f;
+static const float Tweak_DriftCounterSteer = 4.0f;
+static const float Tweak_GameBreakerDriftRechargePerSec = 0.5f;
+static const float Tweak_GameBreakerDriftRechargeMinSpeed = 35.0f;
+static const float Tweak_GameBreakerDriftRechargeYaw = 30.0f;
+static const bool Tweak_AlwaysDrift = false;
+static const bool DoDriftPhysics = true;
+
+// Credits: Brawltendo
+void SuspensionRacer::DoDrifting(const State &state) {
+	if (mDrift.State && ((state.flags & 1) || state.driver_style == STYLE_DRAG)) {
+		mDrift.Reset();
+		return;
+	}
+
+	float drift_change = 0.0f;
+	switch (mDrift.State) {
+		case SuspensionRacer::Drift::D_IN:
+		case SuspensionRacer::Drift::D_ENTER:
+			// the drift value will increment by (dT * 8) when entering and holding a drift
+			drift_change = 8.0f;
+			break;
+		case SuspensionRacer::Drift::D_OUT:
+		case SuspensionRacer::Drift::D_EXIT:
+			// the drift value will decrement by (dT * 2) when not drifting or exiting a drift
+			drift_change = -2.0f;
+			break;
+		default:
+			break;
+	}
+
+	mDrift.Value += drift_change * state.time;
+	// clamp the drift value between 0 and 1
+	if (mDrift.Value <= 0.0f) {
+		mDrift.State = SuspensionRacer::Drift::D_OUT;
+		mDrift.Value = 0.0f;
+	} else if (mDrift.Value >= 1.0f) {
+		mDrift.State = SuspensionRacer::Drift::D_IN;
+		mDrift.Value = 1.0f;
+	}
+
+	if (mDrift.State > SuspensionRacer::Drift::D_ENTER) {
+		float avg_steer = mSteering.InputAverage.GetValue();
+		if ((state.local_angular_vel.y * state.slipangle) < 0.0f && UMath::Abs(state.slipangle) <= 0.25f &&
+			state.speed > MPH2MPS(Tweak_MinDriftSpeedMPH) && (avg_steer * state.slipangle) <= 0.0f &&
+			UMath::Abs(state.slipangle) > DEG2ANGLE(Tweak_DriftSlipAngle)) {
+			mDrift.State = SuspensionRacer::Drift::D_IN;
+		} else if (state.gas_input * state.steer_input * state.slipangle > DEG2ANGLE(Tweak_DriftSlipAngle) &&
+				   state.speed > MPH2MPS(Tweak_MinDriftSpeedMPH)) {
+			mDrift.State = SuspensionRacer::Drift::D_IN;
+		} else if (state.gas_input * UMath::Abs(state.slipangle) > DEG2ANGLE(Tweak_DriftSlipAngle)) {
+			mDrift.State = SuspensionRacer::Drift::D_ENTER;
+		} else {
+			mDrift.State = SuspensionRacer::Drift::D_EXIT;
+		}
+	} else if (state.speed > MPH2MPS(Tweak_DriftEnterSpeed) &&
+			   (state.ebrake_input > 0.5f || UMath::Abs(state.slipangle) > DEG2ANGLE(Tweak_DriftSlipAngle))) {
+		mDrift.State = SuspensionRacer::Drift::D_ENTER;
+	}
+
+	if (mDrift.Value <= 0.0f)
+		return;
+	{
+		float yaw = ANGLE2RAD(state.slipangle);
+		float ang_vel = state.local_angular_vel.y;
+
+		// charge speedbreaker if not in use and drifting is detected
+		if (mGameBreaker <= 0.0f && state.speed > MPH2MPS(Tweak_GameBreakerDriftRechargeMinSpeed) &&
+			UMath::Abs(yaw) > DEG2RAD(Tweak_GameBreakerDriftRechargeYaw)) {
+			IPlayer *player = GetOwner()->GetPlayer();
+			if (player) {
+				player->ChargeGameBreaker(state.time * Tweak_GameBreakerDriftRechargePerSec * mDrift.Value);
+			}
+		}
+
+		// apply yaw damping torque
+		if ((yaw * ang_vel) < 0.0f && mNumWheelsOnGround >= 2) {
+			float yaw_coef = DriftStabilizerTable.GetValue(UMath::Abs(yaw)) * DriftRotationalStabalizer;
+			UMath::Vector3 moment;
+
+			UMath::Scale(state.GetUpVector(), (mDrift.Value * -ang_vel) * yaw_coef * state.inertia.y, moment);
+			mRB->ResolveTorque(&moment);
+		}
+
+		// detect counter steering
+		float countersteer = 0.0f;
+		if (state.steer_input * yaw > 0.0f) {
+			countersteer = UMath::Abs(state.steer_input);
+		}
+
+		float yawangularvel_coeff = DriftYawAngularVelCoeff;
+		float driftcoeff = UMath::Abs(yaw) * yawangularvel_coeff + countersteer * Tweak_DriftCounterSteer + UMath::Abs(ang_vel) * yawangularvel_coeff;
+		float driftmult_rear = DriftRearFrictionTable.GetValue(driftcoeff * mDrift.Value);
+		mTires[2]->SetDriftFriction(driftmult_rear);
+		mTires[3]->SetDriftFriction(driftmult_rear);
+	}
+}
+
+float EBrakeYawControlMin = 0.5f;
+float EBrakeYawControlOnSpeed = 1.0f;
+float EBrakeYawControlOffSpeed = 20.0f;
+float EBrake180Yaw = 0.3f;
+float EBrake180Speed = 80.0f;
+static const float Tweak_GameBreakerGripIncrease = 0.75f;
+static const float Tweak_StagingTraction = 0.25f;
+static const float Tweak_DragYawControl = 0.1f;
+static const float Tweak_StabilityControl = 2.5f;
+static const float Tweak_BlownTireEbrake = 0.0f;
+static const float Tweak_BlownTireBrake = 1.0f;
+static const float Tweak_BlownTireTraction = 0.3f;
+
+// Credits: Brawltendo
+void SuspensionRacer::TuneWheelParams(State &state) {
+	float ebrake = state.ebrake_input;
+	float t = state.time;
+	float speedmph = MPS2MPH(state.local_vel.z);
+	float car_yaw = ANGLE2RAD(state.slipangle);
+	float yawcontrol = mSteering.YawControl;
+
+	// engaging the handbrake decreases steering yaw control
+	if (ebrake >= 0.5f) {
+		yawcontrol -= EBrakeYawControlOffSpeed * t;
+		if (yawcontrol < EBrakeYawControlMin) {
+			yawcontrol = EBrakeYawControlMin;
+		}
+	} else {
+		yawcontrol += EBrakeYawControlOnSpeed * t;
+		if (yawcontrol > 1.0f) {
+			yawcontrol = 1.0f;
+		}
+	}
+	mSteering.YawControl = yawcontrol;
+
+	float brake_biased[2] = {state.brake_input, state.brake_input};
+	yawcontrol *= (1.0f - mDrift.Value); // pointless parentheses for matching purposes
+	const Physics::Tunings *tunings = GetVehicle()->GetTunings();
+	//if (tunings) {
+	//	// brake tuning adjusts the brake bias
+	//	brake_biased[0] += brake_biased[0] * tunings->Value[Physics::Tunings::BRAKES] * 0.5f;
+	//	brake_biased[1] -= brake_biased[1] * tunings->Value[Physics::Tunings::BRAKES] * 0.5f;
+	//}
+	float suspension_yaw_control_limit = CalcYawControlLimit(state.speed);
+	IPlayer *player = GetOwner()->GetPlayer();
+	if (state.driver_style == STYLE_DRAG) {
+		suspension_yaw_control_limit = 0.1f;
+	} else if (player) {
+		PlayerSettings *settings = player->GetSettings();
+		if (settings) {
+			// increase yaw control limit when stability control is off (unused by normal means)
+			if (!settings->Handling) {
+				suspension_yaw_control_limit += 2.5f;
+			}
+		}
+	}
+
+	float max_slip = 0.0f;
+	int max_slip_wheel = 0;
+	for (int i = 0; i < 4; ++i) {
+		float lateral_boost = 1.0f;
+
+		// at speeds below 10 mph, 5% of the current speed in mph is applied as the brake scale for driven wheels
+		if (state.gas_input > 0.8f && state.brake_input > 0.5f && UMath::Abs(speedmph) < 10.0f && IsDriveWheel(i)) {
+			mTires[i]->SetBrake(UMath::Abs(speedmph) * 0.05f);
+		} else {
+			mTires[i]->SetBrake(brake_biased[i >> 1]);
+		}
+
+		// handbrake only applies to the rear wheels
+		if (IsRear(i)) {
+			float b = ebrake;
+			// increase handbrake multiplier when a hard handbrake turn is detected
+			if (ebrake > 0.2f && car_yaw > EBrake180Yaw && speedmph < EBrake180Speed) {
+				b += 0.5f;
+			}
+			mTires[i]->SetEBrake(b);
+		} else {
+			mTires[i]->SetEBrake(0.0f);
+		}
+
+		float friction_boost = 1.0f;
+		// rear wheels get extra boost according to the yaw control
+		if (IsRear(i)) {
+			float grade = state.GetForwardVector().y;
+			float boost = YawFrictionBoost(car_yaw, mTires[i]->GetEBrake(), state.speed, suspension_yaw_control_limit, grade) - 1.0f;
+			friction_boost = yawcontrol * boost + 1.0f;
+		}
+
+		// speedbreaker increases front tire friction relative to the absolute steering input
+		if (mGameBreaker > 0.0f && IsFront(i)) {
+			float over_boost = mGameBreaker * UMath::Abs(state.steer_input) * 0.75f + 1.0f;
+			lateral_boost = over_boost;
+			friction_boost *= over_boost;
+		}
+		mTires[i]->ScaleTractionBoost(friction_boost);
+		mTires[i]->SetLateralBoost(lateral_boost);
+
+		//if (tunings) {
+		//	UMath::Vector2 circle;
+		//	circle.x = tunings->Value[Physics::Tunings::HANDLING] * 0.2f + 1.0f;
+		//	circle.y = 1.0f - tunings->Value[Physics::Tunings::HANDLING] * 0.2f;
+		//	mTires[i]->SetTractionCircle(circle);
+		//}
+		// traction is increased by perfect shifts in drag races and also by engaging the nitrous
+		mTires[i]->ScaleTractionBoost(state.nos_boost * state.shift_boost); // TODO might not match on MSVC
+
+		// popped tires are permanently braking and have reduced traction
+		if ((1 << i) & state.blown_tires) {
+			mTires[i]->SetEBrake(0.0f);
+			mTires[i]->SetBrake(1.0f);
+			mTires[i]->ScaleTractionBoost(0.3f);
+		}
+
+		// find the highest slip of all tires for the burnout/fishtailing state
+		if (mTires[i]->GetCurrentSlip() > max_slip) {
+			max_slip = mTires[i]->GetCurrentSlip();
+			max_slip_wheel = i;
+		}
+	}
+
+	// burnout state only applies when in first gear and the throttle is fully pressed outside of drag events
+	if (state.driver_style != STYLE_DRAG && state.gear == G_FIRST && state.gas_input >= 1.0f) {
+		mBurnOut.Update(state.time, MPS2MPH(state.local_vel.z), max_slip, max_slip_wheel, state.slipangle);
+	} else {
+		mBurnOut.Reset();
+	}
+
+	// lower traction for all wheels when staging
+	if (state.flags & 1) {
+		for (int i = 0; i < 4; ++i) {
+			mTires[i]->ScaleTractionBoost(0.25f);
+		}
+	}
+
+	DoDrifting(state);
+}
+
+static const float Tweak_DragYawSpeed = 1.6f;
+
+// Credits: Brawltendo
+void SuspensionRacer::DoWheelForces(State &state) {
+	const float dT = state.time;
+
+	UMath::Vector3 steerR;
+	UMath::Vector3 steerL;
+	DoSteering(state, steerR, steerL);
+	TuneWheelParams(state);
+
+	unsigned int wheelsOnGround = 0;
+	float maxDelta = 0.0f;
+
+	const UMath::Vector3 &vFwd = state.GetForwardVector();
+	const UMath::Vector3 &vUp = state.GetUpVector();
+
+	const float mass = state.mass;
+
+	float ride_extra = 0.0f;
+	const Physics::Tunings *tunings = GetVehicle()->GetTunings();
+	// todo
+	//if (tunings) {
+	//	ride_extra = tunings->Value[Physics::Tunings::RIDEHEIGHT];
+	//}
+
+	float time = Sim::GetTime();
+	float shock_specs[2];
+	float spring_specs[2];
+	float sway_specs[2];
+	float travel_specs[2];
+	float rideheight_specs[2];
+	float shock_ext_specs[2];
+	float shock_valving[2];
+	float shock_digression[2];
+	float progression[2];
+
+	for (unsigned int i = 0; i < 2; ++i) {
+		shock_specs[i] = LBIN2NM(mCarInfo.GetLayout()->SHOCK_STIFFNESS.At(i).GetValue(UNDERCOVER_SuspensionAtValue));
+		shock_ext_specs[i] = LBIN2NM(mCarInfo.GetLayout()->SHOCK_EXT_STIFFNESS.At(i).GetValue(UNDERCOVER_SuspensionAtValue));
+		shock_valving[i] = INCH2METERS(mCarInfo.GetLayout()->SHOCK_VALVING.At(i));
+		shock_digression[i] = 1.0f - mCarInfo.GetLayout()->SHOCK_DIGRESSION.At(i);
+		spring_specs[i] = LBIN2NM(mCarInfo.GetLayout()->SPRING_STIFFNESS.At(i));
+		sway_specs[i] = LBIN2NM(mCarInfo.GetLayout()->SWAYBAR_STIFFNESS.At(i).GetValue(UNDERCOVER_SuspensionAtValue));
+		travel_specs[i] = INCH2METERS(mCarInfo.GetLayout()->TRAVEL.At(i));
+		rideheight_specs[i] = INCH2METERS(mCarInfo.GetLayout()->RIDE_HEIGHT.At(i) + ride_extra);
+		progression[i] = mCarInfo.GetLayout()->SPRING_PROGRESSION.At(i);
+	}
+
+	float sway_stiffness[4];
+	sway_stiffness[0] = (mTires[0]->GetCompression() - mTires[1]->GetCompression()) * sway_specs[0];
+	sway_stiffness[1] = -sway_stiffness[0];
+	sway_stiffness[2] = (mTires[2]->GetCompression() - mTires[3]->GetCompression()) * sway_specs[1];
+	sway_stiffness[3] = -sway_stiffness[2];
+
+	UMath::Vector4 steering_normals[4];
+	steering_normals[0] = UMath::Vector4Make(steerL, 1.0f);
+	steering_normals[1] = UMath::Vector4Make(steerR, 1.0f);
+	steering_normals[2] = UMath::Vector4Make(vFwd, 1.0f);
+	steering_normals[3] = UMath::Vector4Make(vFwd, 1.0f);
+
+	bool resolve = false;
+	for (unsigned int i = 0; i < 4; ++i) {
+		int axle = i / 2;
+		Tire &wheel = GetWheel(i);
+		UMath::Vector3 wp = wheel.GetWorldArm();
+		wheel.UpdatePosition(state.angular_vel, state.linear_vel, state.matrix, state.world_cog, state.time, wheel.GetRadius(), true, state.collider,
+							 state.dimension.y * 2.0f);
+		const UMath::Vector3 groundNormal(wheel.GetNormal());
+		const UMath::Vector3 forwardNormal(steering_normals[i]);
+		UMath::Vector3 lateralNormal;
+		UMath::UnitCross(groundNormal, forwardNormal, lateralNormal);
+
+		float penetration = wheel.GetNormal().w;
+		// how angled the wheel is relative to the ground
+		float upness = UMath::Clamp(UMath::Dot(groundNormal, vUp), 0.0f, 1.0f);
+		const float oldCompression = wheel.GetCompression();
+		float newCompression = rideheight_specs[axle] * upness + penetration;
+		float max_compression = travel_specs[axle];
+		if (wheel.GetCompression() == 0.0f) {
+			maxDelta = UMath::Max(maxDelta, newCompression - max_compression);
+		}
+		newCompression = UMath::Max(newCompression, 0.0f);
+
+		// handle the suspension bottoming out
+		if (newCompression > max_compression) {
+			float delta = newCompression - max_compression;
+			maxDelta = UMath::Max(maxDelta, delta);
+			// spring can't compress past the travel length
+			newCompression = max_compression;
+			wheel.SetBottomOutTime(time);
+		}
+
+		if (newCompression > 0.0f && upness > VehicleSystem::ENABLE_ROLL_STOPS_THRESHOLD) {
+			++wheelsOnGround;
+
+			const float diff = newCompression - wheel.GetCompression();
+			float rise = diff / dT;
+
+			float spring = (newCompression * spring_specs[axle]) * (newCompression * progression[axle] + 1.0f);
+			if (shock_valving[axle] > FLOAT_EPSILON && shock_digression[axle] < 1.0f) {
+				float abs_rise = UMath::Abs(rise);
+				float valving = shock_valving[axle];
+				if (abs_rise > valving) {
+					float digression = valving * UMath::Pow(abs_rise / valving, shock_digression[axle]);
+					rise = (rise > 0.0f) ? digression : -digression;
+				}
+			}
+
+			float damp = rise > 0.0f ? rise * shock_specs[axle] : rise * shock_ext_specs[axle];
+
+			if (damp > mCarInfo.GetLayout()->SHOCK_BLOWOUT * 9.81f * mass) {
+				damp = 0.0f;
+			}
+
+			float springForce = UMath::Max(damp + spring + sway_stiffness[i], 0.0f);
+
+			UMath::Vector3 verticalForce(vUp * springForce);
+
+			UMath::Vector3 driveForce;
+			UMath::Vector3 lateralForce;
+			UMath::Vector3 c;
+			UMath::Cross(forwardNormal, groundNormal, c);
+			UMath::Cross(c, forwardNormal, c);
+
+			float d2 = UMath::Dot(c, groundNormal) * 4.0f - 3.0f;
+			float load = UMath::Max(d2, 0.3f) * springForce;
+			const UMath::Vector3 &pointVelocity = wheel.GetVelocity();
+			float xspeed = UMath::Dot(pointVelocity, lateralNormal);
+			float zspeed = UMath::Dot(pointVelocity, forwardNormal);
+
+			float traction_force = wheel.UpdateLoaded(xspeed, zspeed, state.speed, load, state.time);
+			float max_traction = UMath::Abs(xspeed / dT * (0.25f * mass));
+			lateralForce = (UMath::Vector3)(lateralNormal * UMath::Clamp(traction_force, -max_traction, max_traction));
+
+			UMath::Vector3 force;
+			UMath::UnitCross(lateralNormal, groundNormal, driveForce);
+			UMath::Scale(driveForce, wheel.GetLongitudeForce(), driveForce);
+			UMath::Add(lateralForce, driveForce, force);
+			UMath::Add(force, verticalForce, force);
+
+			wheel.SetForce(force);
+			resolve = true;
+		} else {
+			wheel.SetForce({0,0,0});
+			wheel.UpdateFree(dT);
+		}
+
+		if (newCompression == 0.0f) {
+			wheel.IncAirTime(dT);
+		} else {
+			wheel.SetAirTime(0.0f);
+		}
+		wheel.SetCompression(newCompression);
+	}
+
+	if (resolve) {
+		UMath::Vector3 total_torque = {0,0,0};
+		UMath::Vector3 total_force = {0,0,0};
+
+		for (unsigned int i = 0; i < 4; ++i) {
+			Tire &wheel = GetWheel(i);
+			UMath::Vector3 p(wheel.GetLocalArm());
+			p.y += wheel.GetCompression();
+			p.y -= rideheight_specs[i / 2u];
+			const UMath::Vector3 &force = wheel.GetForce();
+			UMath::RotateTranslate(p, state.matrix, p);
+			wheel.SetPosition(p);
+
+			UMath::Vector3 torque;
+			UMath::Vector3 r;
+			UMath::Sub(p, state.world_cog, r);
+			UMath::Sub(r, state.GetPosition(), r);
+			UMath::Cross(r, force, torque);
+			UMath::Add(total_force, force, total_force);
+			UMath::Add(total_torque, torque, total_torque);
+		}
+
+		float yaw = UMath::Dot((UMath::Vector3)state.matrix.y, total_torque);
+		//float counter_yaw = yaw * mCarInfo.GetLayout()->YAW_SPEED;
+		float counter_yaw = yaw * *(float*)Attrib::Instance::GetAttributePointer(&mCarInfo, Attrib::StringHash32("YAW_SPEED"), 0); // todo this could crash
+		if (state.driver_style == STYLE_DRAG) {
+			counter_yaw *= Tweak_DragYawSpeed;
+		}
+		UMath::ScaleAdd((UMath::Vector3)state.matrix.y, counter_yaw - yaw, total_torque, total_torque);
+		mRB->Resolve(&total_force, &total_torque);
+	}
+
+	if (maxDelta > 0.0f) {
+		for (int i = 0; i < 4; ++i) {
+			auto& wheel = GetWheel(i);
+			wheel.SetY(wheel.GetPosition().y + maxDelta);
+		}
+		mRB->ModifyYPos(maxDelta);
+	}
+
+	if (wheelsOnGround != 0 && !mNumWheelsOnGround) {
+		state.local_angular_vel.z *= 0.5f;
+		state.local_angular_vel.y *= 0.5f;
+		UMath::Rotate(state.local_angular_vel, state.matrix, state.angular_vel);
+		mRB->SetAngularVelocity(&state.angular_vel);
+	}
+	mNumWheelsOnGround = wheelsOnGround;
+}
+
+void SuspensionRacer::ComputeState(float dT, State &state) {
+	IRigidBody *irb = GetOwner()->GetRigidBody();
+	state.time = dT;
+	state.flags = 0;
+	state.collider = mCollisionBody->GetWCollider();
+	irb->GetInertiaTensor(&state.inertia);
+	irb->GetDimension(&state.dimension);
+
+	state.matrix = *irb->GetTransform();
+	state.matrix.p = *irb->GetPosition();
+	state.matrix.pw = 1.0f;
+
+	state.local_vel = *irb->GetLinearVelocity();
+	state.linear_vel = state.local_vel;
+	irb->ConvertWorldToLocal(&state.local_vel, false);
+	state.angular_vel = *irb->GetAngularVelocity();
+	state.local_angular_vel = state.angular_vel;
+	irb->ConvertWorldToLocal(&state.local_angular_vel, false);
+
+	state.speed = UMath::Length(state.linear_vel);
+	if (state.local_vel.z < 1.0f) {
+		state.slipangle = 0.0f;
+	} else {
+		state.slipangle = UMath::Atan2a(state.local_vel.x, state.local_vel.z);
+	}
+
+	state.gas_input = UMath::Clamp(mInput->GetControlGas(), 0.0f, 1.0f);
+	state.brake_input = UMath::Clamp(mInput->GetControlBrake(), 0.0f, 1.0f);
+	state.ebrake_input = mInput->GetControlHandBrake();
+	state.steer_input = UMath::Clamp(mInput->GetControlSteering(), -1.0f, 1.0f);
+
+	state.cog = *irb->GetCenterOfGravity();
+	state.ground_effect = mNumWheelsOnGround * 0.25f;
+	state.mass = irb->GetMass();
+	state.driver_style = GetVehicle()->GetDriverStyle();
+	state.driver_class = GetVehicle()->GetDriverClass();
+
+	if (GetVehicle()->IsStaging()) {
+		state.flags |= State::IS_STAGING;
+	}
+
+	if (mEngine) {
+		state.nos_boost = mEngine->GetNOSBoost();
+	} else {
+		state.nos_boost = 1.0f;
+	}
+	if (mTransmission) {
+		state.gear = mTransmission->GetGear();
+	} else {
+		state.gear = G_NEUTRAL;
+	}
+
+	state.shift_boost = 1.0f;
+
+	if (mEngineDamage && mEngineDamage->IsBlown() || GetVehicle()->IsDestroyed()) {
+		state.brake_input = 1.0f;
+		state.gas_input = 0.0f;
+		state.ebrake_input = 1.0f;
+	}
+
+	UMath::Rotate(state.cog, state.matrix, state.world_cog);
+
+	state.blown_tires = 0;
+	if (mSpikeDamage) {
+		for (unsigned int i = 0; i < 4; ++i) {
+			if (mSpikeDamage->GetTireDamage(i) == TIRE_DAMAGE_BLOWN) {
+				state.blown_tires |= (1 << i);
+			}
+		}
+	}
+
+	if (GetVehicle()->IsDestroyed()) {
+		state.flags |= State::IS_DESTROYED;
 	}
 }
 
@@ -834,4 +1773,41 @@ void SuspensionRacer::OnTaskSimulate(float dT) {
 	DoJumpStabilizer(state);
 	//DoSleep(state); // todo?
 	//Chassis::OnTaskSimulate(dT);
+}
+
+void MWWheel::UpdateSurface(const SimSurface* surface) {
+	if (mSurfaceStick > 0.0) {
+		if (surface->mCollection == mSurface.mCollection) {
+			mSurfaceStick = surface->GetLayout()->STICK;
+		}
+	}
+	else {
+		Attrib::Instance::Change(&mSurface, surface->mCollection);
+		mSurfaceStick = surface->GetLayout()->STICK;
+	}
+}
+
+bool MWWheel::UpdatePosition(const UMath::Vector3 &body_av, const UMath::Vector3 &body_lv,
+						   const UMath::Matrix4 &body_matrix, const UMath::Vector3 &cog,
+						   float dT, float wheel_radius, bool usecache, const WCollider *collider, float vehicle_height) {
+	UMath::Rotate(mLocalArm, body_matrix, mWorldArm);
+	UMath::Add(mWorldArm, (UMath::Vector3)body_matrix.p, mPosition);
+
+	UMath::Vector3 pVel;
+	UMath::Vector3 pos;
+	UMath::Sub(mWorldArm, cog, pos);
+	UMath::Cross(body_av, pos, pVel);
+	UMath::Add(pVel, body_lv, pVel);
+	SetVelocity(pVel);
+
+	UMath::Add(mWorldArm, (UMath::Vector3)body_matrix.p, mPosition);
+
+	float tolerance = UMath::Max(-pVel.y * dT, 0.0f) + wheel_radius + UMath::Lengthxz(pVel) * dT;
+	float prev = vehicle_height * 0.5f;
+	mWorldPos.SetTolerance(UMath::Min(tolerance, prev));
+
+	bool result = WWorldPos::Update(&mWorldPos, &mPosition, &mNormal, IsOnGround() && usecache, collider, true);
+	auto surf = SimSurface(mWorldPos.pSurface);
+	UpdateSurface(&surf);
+	return result;
 }

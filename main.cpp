@@ -10,16 +10,47 @@
 
 #include "include/chloemenulib.h"
 
+#include "decomp/ConversionUtil.hpp"
+
 auto cartuning_LookupKey = (uint32_t(__thiscall*)(Attrib::Gen::car_tuning*, const ISimable*, int))0x721E20;
 auto ctor_cartuning = (void(__thiscall*)(Attrib::Gen::car_tuning*, uint32_t))0x721CB0;
 
 #define FLOAT_EPSILON 0.000001f
 
+namespace VehicleSystem {
+	float ENABLE_ROLL_STOPS_THRESHOLD = 0.2f;
+};
+
 inline bool IsFront(unsigned int i) {
 	return i < 2;
 }
 
+inline bool IsRear(unsigned int i) {
+	return i > 1;
+}
+
+inline int bClamp(int a, int MINIMUM, int MAXIMUM) {
+	return std::min(std::max(a, MINIMUM), MAXIMUM);
+}
+
+inline float bClamp(float a, float MINIMUM, float MAXIMUM) {
+	return std::min(MAXIMUM, std::max(a, MINIMUM));
+}
+
 namespace UMath {
+	inline Vector4 Vector4Make(const Vector3 &c, float w) {
+		Vector4 res;
+		res.x = c.x;
+		res.y = c.y;
+		res.z = c.z;
+		res.w = w;
+		return res;
+	}
+
+	inline Vector3 Vector4To3(const Vector4 &c) {
+		return {c.x,c.y,c.z};
+	}
+
 	float Abs(float f) { return std::abs(f); }
 	float Min(float a, float b) { return std::min(a, b); }
 	float Max(float a, float b) { return std::max(a, b); }
@@ -28,6 +59,16 @@ namespace UMath {
 	float Sqrt(float a) { return std::sqrt(a); }
 	float Pow(float a, float b) { return std::pow(a, b); }
 	float Atan2a(float a, float b) { return std::atan2(a, b); }
+
+	inline void Cross(const Vector3 &a, const Vector3 &b, Vector3 &r) {
+		r.x = a.y * b.z - a.z * b.y;
+		r.y = a.z * b.x - a.x * b.z;
+		r.z = a.x * b.y - a.y * b.x;
+	}
+
+	inline float Atan2d(float o, float a) {
+		return ANGLE2DEG(std::atan2(o, a));
+	}
 
 	inline void RotateTranslate(const Vector3 &v, const Matrix4 &m, Vector3 &result) {
 		result.x = ((m.x.x * v.x) + ((m.z.x * v.z) + (m.y.x * v.y))) + m.p.x;
@@ -75,6 +116,12 @@ namespace UMath {
 		return std::sqrt(LengthSquare(a));
 	}
 
+	inline float Lengthxz(const Vector3 &a) {
+		auto tmp = a;
+		tmp.y = 0;
+		return tmp.length();
+	}
+
 	inline void Scale(const Vector3 &a, const Vector3 &b, Vector3 &r) {
 		r.x = a.x * b.x;
 		r.y = a.y * b.y;
@@ -103,6 +150,12 @@ namespace UMath {
 		r.x = a.x + b.x;
 		r.y = a.y + b.y;
 		r.z = a.z + b.z;
+	}
+
+	inline void Sub(const Vector3 &a, const Vector3 &b, Vector3 &r) {
+		r.x = a.x - b.x;
+		r.y = a.y - b.y;
+		r.z = a.z - b.z;
 	}
 
 	inline void ScaleAdd(const Vector3 &a, const float s, const Vector3 &b, Vector3 &r) {
@@ -152,7 +205,8 @@ float Table::GetValue(float input) {
 	return (1.0f - delta) * pTable[index] + delta * pTable[index + 1];
 }
 
-#include "decomp/ConversionUtil.hpp"
+std::vector<float> UNDERCOVER_YawControl = { 0.1, 0.2, 0.65, 1 };
+
 #include "decomp/AverageWindow.h"
 #include "decomp/SuspensionRacer.h"
 #include "decomp/SuspensionRacer.cpp"

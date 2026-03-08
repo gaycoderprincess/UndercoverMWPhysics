@@ -21,6 +21,11 @@ public:
 		mFlags = flags;
 	}
 
+	void UpdateSurface(const SimSurface* surface);
+	bool UpdatePosition(const UMath::Vector3 &body_av, const UMath::Vector3 &body_lv,
+							   const UMath::Matrix4 &body_matrix, const UMath::Vector3 &cog,
+							   float dT, float wheel_radius, bool usecache, const WCollider *collider, float vehicle_height);
+
 	const UMath::Vector4 &GetNormal() const {
 		return mNormal;
 	}
@@ -421,7 +426,7 @@ public:
 		short blown_tires;
 		float nos_boost;
 		float shift_boost;
-		const struct WCollider *collider;
+		const WCollider *collider;
 
 		enum Flags { IS_STAGING = 1, IS_DESTROYED };
 
@@ -439,6 +444,56 @@ public:
 		}
 	};
 
+	struct Differential {
+		void CalcSplit(bool locked);
+
+		float angular_vel[2];
+		int has_traction[2];
+		float bias;
+		float factor;
+		float torque_split[2];
+	};
+
+	ISimable* GetOwner() {
+		return Behavior::mIOwner;
+	}
+
+	IVehicle* GetVehicle() {
+		return mVehicle;
+	}
+
+	bool RearWheelDrive() {
+		return mCarInfo.GetLayout()->TORQUE_SPLIT < 1.0f;
+	}
+
+	bool FrontWheelDrive() {
+		return mCarInfo.GetLayout()->TORQUE_SPLIT > 0.0f;
+	}
+
+	bool IsDriveWheel(unsigned int i) {
+		return (IsRear(i) && RearWheelDrive()) || (IsFront(i) && FrontWheelDrive());
+	}
+
+	Tire &GetWheel(unsigned int i) {
+		return *mTires[i];
+	}
+
+	const Tire &GetWheel(unsigned int i) const {
+		return *mTires[i];
+	}
+
+	void DoDrifting(const State &state);
+	float CalcYawControlLimit(float speed) const;
+	void TuneWheelParams(State &state);
+	float CalculateMaxSteering(State &state, ISteeringWheel::SteeringType steer_type);
+	float CalculateSteeringSpeed(State &state);
+	float DoHumanSteering(State &state);
+	void ComputeAckerman(const float steering, const State &state, UMath::Vector4 *left, UMath::Vector4 *right) const;
+	float DoAISteering(State &state);
+	void DoWallSteer(State &state);
+	void DoSteering(State &state, UMath::Vector3 &right, UMath::Vector3 &left);
+	void DoWheelForces(State &state);
+	void ComputeState(float dT, State &state);
 	void SetCOG(float extra_bias, float extra_ride);
 	float CalculateUndersteerFactor() const;
 	Mps ComputeMaxSlip(const State &state) const;
@@ -452,16 +507,5 @@ public:
 	void OnBehaviorChange(const UCrc32 &mechanic);
 	void Create(const BehaviorParams& bp);
 	void DoJumpStabilizer(const State& bp);
-
-	ISimable* GetOwner() {
-		return Behavior::mIOwner;
-	}
-
-	Tire& GetWheel(int i) {
-		return *mTires[i];
-	}
-
-	IVehicle* GetVehicle() {
-		return mVehicle;
-	}
+	void DoDriveForces(State &state);
 };

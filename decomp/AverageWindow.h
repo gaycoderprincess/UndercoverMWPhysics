@@ -103,7 +103,39 @@ public:
 		return pTimeData[iOldestValue];
 	}
 
-	void Record(const float fValue, const float fTimeNow);
+	// todo this wasn't in the decomp, verify
+	void Record(const float fValue, const float fTimeNow) {
+		if (pData[nCurrentSlot] == 0.0 && pTimeData[nCurrentSlot] == 0.0) {
+			nSamples++;
+		}
+		else {
+			fTotal -= pData[nCurrentSlot];
+		}
+		fTotal += fValue;
+		pData[nCurrentSlot] = fValue;
+		pTimeData[nCurrentSlot] = fTimeNow;
+
+		while (fTimeNow - pTimeData[iOldestValue] > fTimeWindow) {
+			if (pTimeData[iOldestValue] > 0.0) {
+				fTotal -= pData[iOldestValue];
+				pData[iOldestValue] = 0.0;
+				pTimeData[iOldestValue] = 0.0;
+				nSamples--;
+			}
+			if (++iOldestValue >= nSlots) {
+				iOldestValue = 0;
+			}
+		}
+
+		auto avg = fTotal;
+		if (nSamples) {
+			avg = fTotal / (double)nSamples;
+		}
+		fAverage = avg;
+		if (++nCurrentSlot >= nSlots) {
+			nCurrentSlot = 0;
+		}
+	}
 	void Reset(float fValue) {
 		for (int i = 0; i < nSlots; i++) {
 			pData[i] = fValue;
@@ -129,7 +161,21 @@ public:
 		NumPoints = num_points;
 	}
 
-	float GetValue(float x);
+	float GetValue(float x) {
+		// todo this is entirely guessed, it wasn't in decomp and its pseudocode confusing as hell
+		auto curve = Points[0].x;
+		for (int i = 0; i < NumPoints; i++) {
+			if (x < Points[i].x) break;
+
+			if (i >= NumPoints-1) return curve = Points[i].y;
+
+			float delta = x;
+			delta -= Points[i].x;
+			delta /= (Points[i+1].x - Points[i].x);
+			curve = std::lerp(Points[i].y, Points[i+1].y, delta);
+		}
+		return curve;
+	}
 
 private:
 	bVector2 *Points; // offset 0x0, size 0x4
