@@ -11,12 +11,10 @@ public:
 	}
 
 	AverageBase(int size, int slots)
-			: nSize(size),   //
+			: //nSize(size),   //
 			  nSlots(slots), //
 			  nSamples(0),   //
 			  nCurrentSlot(0) {}
-
-	virtual ~AverageBase() {}
 
 	void *Allocate(unsigned int size, const char *name) {
 		return gFastMem.Alloc(size, name);
@@ -29,10 +27,7 @@ public:
 		return nSamples;
 	}
 
-	virtual void Recalculate() {}
-
 protected:
-	unsigned char nSize;
 	unsigned char nSlots;
 	unsigned char nSamples;
 	unsigned char nCurrentSlot;
@@ -90,7 +85,7 @@ public:
 			: Average(f_timewindow * f_frequency + 0.5f), //
 			  fTimeWindow(f_timewindow),                  //
 			  iOldestValue(0),                            //
-			  AllocSize(4 * nSize) {
+			  AllocSize(4 * nSlots) {
 		pTimeData = (float*)Allocate(AllocSize, "AverageWindow::TimeData");
 		memset(pTimeData, 0, AllocSize);
 	}
