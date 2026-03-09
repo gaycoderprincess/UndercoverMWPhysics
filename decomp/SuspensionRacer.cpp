@@ -418,7 +418,7 @@ float SuspensionRacer::Tire::UpdateLoaded(float lat_vel, float fwd_vel, float bo
 
 	mSlipAngle = UMath::Atan2a(lat_vel, abs_fwd);
 	float groundfriction = 0.0f;
-	float slip_speed = (mAV * mRadius) - fwd_vel;
+	float slip_speed = mAV * mRadius - fwd_vel;
 	float dynamicfriction = 1.0f;
 	mSlip = slip_speed;
 	float skid_speed = UMath::Sqrt(slip_speed * slip_speed + lat_vel * lat_vel);
@@ -1637,9 +1637,6 @@ void SuspensionRacer::DoWheelForces(State &state) {
 		}
 		newCompression = UMath::Max(newCompression, 0.0f);
 
-		WriteLog(std::format("penetration {:.2f}", penetration));
-		WriteLog(std::format("rideheight_specs[axle] {:.2f}", rideheight_specs[axle]));
-
 		// handle the suspension bottoming out
 		if (newCompression > max_compression) {
 			float delta = newCompression - max_compression;
@@ -1648,11 +1645,6 @@ void SuspensionRacer::DoWheelForces(State &state) {
 			newCompression = max_compression;
 			wheel.SetBottomOutTime(time);
 		}
-
-		WriteLog(std::format("newCompression {:.2f}", newCompression));
-		WriteLog(std::format("upness {:.2f}", upness));
-		WriteLog(std::format("groundNormal {:.2f} {:.2f} {:.2f}", groundNormal.x, groundNormal.y, groundNormal.z));
-		WriteLog(std::format("vUp {:.2f} {:.2f} {:.2f}", vUp.x, vUp.y, vUp.z));
 
 		if (newCompression > 0.0f && upness > VehicleSystem::ENABLE_ROLL_STOPS_THRESHOLD) {
 			++wheelsOnGround;
@@ -1694,7 +1686,9 @@ void SuspensionRacer::DoWheelForces(State &state) {
 
 			float traction_force = wheel.UpdateLoaded(xspeed, zspeed, state.speed, load, state.time);
 			float max_traction = UMath::Abs(xspeed / dT * (0.25f * mass));
+			max_traction *= fHackMaxTraction;
 			lateralForce = (UMath::Vector3)(lateralNormal * UMath::Clamp(traction_force, -max_traction, max_traction));
+			lateralForce *= fHackLateralForce;
 
 			UMath::Vector3 force;
 			UMath::UnitCross(lateralNormal, groundNormal, driveForce);
@@ -1704,7 +1698,6 @@ void SuspensionRacer::DoWheelForces(State &state) {
 
 			wheel.SetForce(force);
 			resolve = true;
-			WriteLog(std::format("force {:.2f} {:.2f} {:.2f}", force.x, force.y, force.z));
 		} else {
 			wheel.SetForce({0,0,0});
 			wheel.UpdateFree(dT);
@@ -1941,8 +1934,6 @@ void SuspensionRacer::OnTaskSimulate(float dT) {
 	DoJumpStabilizer(state);
 	//DoSleep(state); // todo?
 	//Chassis::OnTaskSimulate(dT);
-
-	WriteLog("OnTaskSimulate finished");
 }
 
 void MWWheel::UpdateSurface(const Attrib::Collection* surface) {
@@ -1987,10 +1978,7 @@ bool MWWheel::UpdatePosition(const UMath::Vector3 &body_av, const UMath::Vector3
 	mWorldPos.SetTolerance(UMath::Min(tolerance, prev));
 
 	bool result = WWorldPos::Update(&mWorldPos, &mPosition, &mNormal, IsOnGround() && usecache, collider, true);
-	// this is supposed to almost always be negative
 	mNormal.w = ((mWorldPos.fPt0.x - mPosition.x) * mNormal.x) + (((mWorldPos.fPt0.z - mPosition.z) * mNormal.z) + ((mWorldPos.fPt0.y - mPosition.y) * mNormal.y));
-
-	WriteLog(std::format("result {} surface {:X}", result, (uintptr_t)mWorldPos.pSurface));
 	UpdateSurface(mWorldPos.pSurface);
 	return result;
 }

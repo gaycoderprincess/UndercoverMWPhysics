@@ -241,6 +241,8 @@ std::vector<float> UNDERCOVER_YawControl = { 0.1, 0.2, 0.65, 1 };
 
 float fHackLateralBoost = 1.0;
 float fHackFrictionBoost = 1.0;
+float fHackLateralForce = 1.0;
+float fHackMaxTraction = 1.0;
 
 // up force seems fine
 // driveForce is too low, calculated through GetLongitudeForce, might be too low too
@@ -294,17 +296,22 @@ void DebugMenu() {
 	if (pSuspension) {
 		QuickValueEditor("fHackLateralBoost", fHackLateralBoost);
 		QuickValueEditor("fHackFrictionBoost", fHackFrictionBoost);
+		QuickValueEditor("fHackLateralForce", fHackLateralForce);
+		QuickValueEditor("fHackMaxTraction", fHackMaxTraction);
 		//DrawMenuOption(std::format("state.flags - {}", LastChassisState.flags));
 		//DrawMenuOption(std::format("state.time - {}", LastChassisState.time));
 		//DrawMenuOption(std::format("state.mass - {}", LastChassisState.mass));
 		//DrawMenuOption(std::format("state.local_vel - {:.2f} {:.2f} {:.2f}", LastChassisState.local_vel.x, LastChassisState.local_vel.y, LastChassisState.local_vel.z));
 		//DrawMenuOption(std::format("state.linear_vel - {:.2f} {:.2f} {:.2f}", LastChassisState.linear_vel.x, LastChassisState.linear_vel.y, LastChassisState.linear_vel.z));
 		//DrawMenuOption(std::format("state.speed - {:.2f}", LastChassisState.speed));
+		DrawMenuOption(std::format("state.inertia - {:.2f} {:.2f} {:.2f}", LastChassisState.inertia.x, LastChassisState.inertia.y, LastChassisState.inertia.z));
 		DrawMenuOption(std::format("state.steer_input - {:.2f}", LastChassisState.steer_input));
 		DrawMenuOption(std::format("state.nos_boost - {:.2f}", LastChassisState.nos_boost));
 		DrawMenuOption(std::format("state.shift_boost - {:.2f}", LastChassisState.shift_boost));
 		DrawMenuOption(std::format("mDrift.State - {}", (int)pSuspension->mDrift.State));
 		DrawMenuOption(std::format("mDrift.Value - {:.2f}", pSuspension->mDrift.Value));
+		DrawMenuOption(std::format("mBurnOut.Traction - {:.2f}", pSuspension->mBurnOut.GetTraction()));
+		DrawMenuOption(std::format("mBurnOut.State - {}", pSuspension->mBurnOut.GetState()));
 		//DrawMenuOption(std::format("MaxSlip - {:.2f}", pSuspension->ComputeMaxSlip(LastChassisState)));
 		//DrawMenuOption(std::format("MaxSteering - {:.2f}", pSuspension->CalculateMaxSteering(LastChassisState, ISteeringWheel::kGamePad)));
 		DrawMenuOption(std::format("LateralGripScale - {:.2f}", pSuspension->ComputeLateralGripScale(LastChassisState)));
@@ -340,41 +347,13 @@ void DebugMenu() {
 
 auto oldctor = (void*(__thiscall*)(void*, BehaviorParams*, SuspensionParams*))0x73CEA0;
 auto oldctorbase = (void*(__thiscall*)(void*, BehaviorParams*, int))0x6DB670;
-SuspensionRacer* __thiscall ChassisHumanConstructHooked(BehaviorParams* bp) {
+SuspensionRacer* ChassisHumanConstructHooked(BehaviorParams* bp) {
 	auto data = pSuspension = (SuspensionRacer*)gFastMem.Alloc(sizeof(SuspensionRacer), nullptr);
 	memset(data,0,sizeof(SuspensionRacer));
 	oldctorbase(data, bp, 0);
 	data->Create(*bp);
 	return data;
 }
-
-
-void __attribute__((naked)) ChassisHumanConstructASM() {
-	__asm__ (
-		//"push EAX\n\t"
-		"push ECX\n\t"
-		"mov ecx, [esp+8]\n\t"
-		"push EDX\n\t"
-		"push EBX\n\t"
-		"push EBP\n\t"
-		"push ESI\n\t"
-		"push EDI\n\t"
-		"call %0\n\t"
-		"pop EDI\n\t"
-		"pop ESI\n\t"
-		"pop EBP\n\t"
-		"pop EBX\n\t"
-		"pop EDX\n\t"
-		"pop ECX\n\t"
-		//"pop EAX\n\t"
-		"ret\n\t"
-			:
-			:  "i" (ChassisHumanConstructHooked)
-	);
-}
-
-// first crash:
-// GetPriority called from 6E6E54
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 	switch( fdwReason ) {
@@ -387,7 +366,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 			ChloeMenuLib::RegisterMenu("Debug Menu", &DebugMenu);
 
 			//NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x73F88D, 0x6DB670);
-			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73F830, &ChassisHumanConstructASM);
+			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73F830, &ChassisHumanConstructHooked);
 
 			WriteLog("Mod initialized");
 		} break;
