@@ -394,7 +394,7 @@ float SuspensionRacer::Tire::UpdateLoaded(float lat_vel, float fwd_vel, float bo
 	float fwd_acc = (fwd_vel - mRoadSpeed) / dT;
 
 	mRoadSpeed = fwd_vel;
-	mLoad = UMath::Max(load, 0.0f);
+	mLoad = UMath::Max(load, 0.0f) * fHackLoadMultiplier;
 	mLateralSpeed = lat_vel;
 
 	float bt = mBrake * brake_spec;
@@ -415,7 +415,7 @@ float SuspensionRacer::Tire::UpdateLoaded(float lat_vel, float fwd_vel, float bo
 
 	mSlipAngle = UMath::Atan2a(lat_vel, abs_fwd);
 	float groundfriction = 0.0f;
-	float slip_speed = mAV * mRadius - fwd_vel;
+	float slip_speed = (mAV * mRadius) - fwd_vel;
 	float dynamicfriction = 1.0f;
 	mSlip = slip_speed;
 	float skid_speed = UMath::Sqrt(slip_speed * slip_speed + lat_vel * lat_vel);
@@ -423,6 +423,7 @@ float SuspensionRacer::Tire::UpdateLoaded(float lat_vel, float fwd_vel, float bo
 	if (skid_speed > FLOAT_EPSILON && (lat_vel != 0.0f || fwd_vel != 0.0f)) {
 		dynamicfriction = dynamicgrip_spec * mTractionBoost;
 		dynamicfriction *= pilot_factor;
+		dynamicfriction *= fHackDynamicFrictionMultiplier;
 		groundfriction = mLoad * dynamicfriction / skid_speed;
 		float slipgroundfriction = mLoad * dynamicfriction / UMath::Sqrt(fwd_vel * fwd_vel + lat_vel * lat_vel);
 		CheckForBrakeLock(abs_fwd * slipgroundfriction);
@@ -1701,6 +1702,8 @@ void SuspensionRacer::DoWheelForces(State &state) {
 			UMath::Vector3 force;
 			UMath::UnitCross(lateralNormal, groundNormal, driveForce);
 			UMath::Scale(driveForce, wheel.GetLongitudeForce(), driveForce);
+			driveForce *= fHackDriveForceMultiplier;
+			lateralForce *= fHackLateralForceMultiplier;
 			UMath::Add(lateralForce, driveForce, force);
 			UMath::Add(force, verticalForce, force);
 

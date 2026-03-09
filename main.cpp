@@ -70,25 +70,27 @@ namespace UMath {
 	float Sqrt(float a) { return std::sqrt(a); }
 	float Pow(float a, float b) { return std::pow(a, b); }
 	float Pow(int a, int b) { return std::pow(a, b); }
-	float Atan2a(float a, float b) { return std::atan2(a, b); }
+	float Atan2a(float a1, float a2) {
+		return bATan(a2, a1) * 0.000015258789;
+	}
 
-	inline void Cross(const Vector3 &a, const Vector3 &b, Vector3 &r) {
+	inline void Cross(Vector3 a, Vector3 b, Vector3 &r) {
 		r.x = a.y * b.z - a.z * b.y;
 		r.y = a.z * b.x - a.x * b.z;
 		r.z = a.x * b.y - a.y * b.x;
 	}
 
 	inline float Atan2d(float o, float a) {
-		return ANGLE2DEG(std::atan2(o, a));
+		return ANGLE2DEG(Atan2a(o, a));
 	}
 
-	inline void RotateTranslate(const Vector3 &v, const Matrix4 &m, Vector3 &result) {
+	inline void RotateTranslate(Vector3 v, Matrix4 m, Vector3 &result) {
 		result.x = ((m.x.x * v.x) + ((m.z.x * v.z) + (m.y.x * v.y))) + m.p.x;
 		result.y = ((m.x.y * v.x) + ((m.z.y * v.z) + (m.y.y * v.y))) + m.p.y;
 		result.z = ((m.x.z * v.x) + ((m.z.z * v.z) + (m.y.z * v.y))) + m.p.z;
 	}
 
-	inline void RotateTranslate(const Vector4 &v, const Matrix4 &m, Vector4 &result) {
+	inline void RotateTranslate(Vector4 v, Matrix4 m, Vector4 &result) {
 		auto v4 = v.y;
 		auto v5 = v.z;
 		auto v6 = v.w;
@@ -99,7 +101,7 @@ namespace UMath {
 		result.w = (m.xw * v3) + ((m.yw * v4) + ((m.pw * v6) + (m.zw * v5)));
 	}
 
-	inline void Unit(const Vector3 &a, Vector3 &r) {
+	inline void Unit(Vector3 a, Vector3 &r) {
 		auto len = a.length();
 		if (len != 0.0) {
 			r.x = a.x / len;
@@ -112,7 +114,7 @@ namespace UMath {
 	}
 
 	// todo is this correct
-	void UnitCross(const Vector3 &a, const Vector3 &b, Vector3 &r) {
+	void UnitCross(Vector3 a, Vector3 b, Vector3 &r) {
 		r.x = a.y * b.z - a.z * b.y;
 		r.y = a.z * b.x - a.x * b.z;
 		r.z = a.x * b.y - a.y * b.x;
@@ -157,7 +159,7 @@ namespace UMath {
 		return a.x * b.x + a.y * b.y + a.z * b.z;
 	}
 
-	inline void Rotate(const Vector3 &a, const Matrix4 &m, Vector3 &r) {
+	inline void Rotate(Vector3 a, Matrix4 m, Vector3 &r) {
 		Vector3 temp = a;
 
 		r.x = m.x.x * temp.x + m.y.x * temp.y + m.z.x * temp.z;
@@ -186,6 +188,17 @@ namespace UMath {
 	}
 
 	inline float Ramp(const float a, const float amin, const float amax) {
+		auto v3 = amax - amin;
+		if ( v3 <= 0.000001 )
+			return 0.0;
+		auto v5 = (a - amin) / v3;
+		if ( v5 >= 1.0 )
+			return 1.0;
+		auto result = v5;
+		if ( v5 < 0.0 )
+			return 0.0;
+		return result;
+
 		//auto v2 = 1.0;
 		//if ( ((a - amin) / (amax - amin)) < 1.0 )
 		//	v2 = ((a - amin) / (amax - amin));
@@ -194,8 +207,8 @@ namespace UMath {
 		//	v3 = 0.0;
 		//return v3;
 
-		float arange = amax - amin;
-		return arange > FLOAT_EPSILON ? std::max(0.0f, std::min((a - amin) / arange, 1.0f)) : 0.0f;
+		//float arange = amax - amin;
+		//return arange > FLOAT_EPSILON ? std::max(0.0f, std::min((a - amin) / arange, 1.0f)) : 0.0f;
 	}
 
 	// Credits: Brawltendo
@@ -236,10 +249,17 @@ float Table::GetValue(float input) {
 
 std::vector<float> UNDERCOVER_YawControl = { 0.1, 0.2, 0.65, 1 };
 
+float fHackDynamicFrictionMultiplier = 1.0;
+float fHackLoadMultiplier = 1.0;
 float fHackDriveGripMultiplier = 1.0;
+float fHackDriveForceMultiplier = 1.0;
+float fHackLateralForceMultiplier = 1.0;
 float fHackLateralGripMultiplier = 1.0;
 float fHackRollingResistanceMultiplier = 1.0;
 float fHackTorqueMultiplier = 1.0;
+
+// up force seems fine
+// driveForce is too low, calculated through GetLongitudeForce, might be too low too
 
 #include "decomp/AverageWindow.h"
 #include "decomp/SuspensionRacer.h"
@@ -281,11 +301,17 @@ void QuickValueEditor(const char* name, float& value) {
 // DRIVE_GRIP 1
 // ROLLING_RESISTANCE 1
 
+// DoDriveForces is almost entirely responsible for acceleration in MW, without it the car just rolls
+
 SuspensionRacer* pSuspension = nullptr;
 void DebugMenu() {
 	ChloeMenuLib::BeginMenu();
 
 	if (pSuspension) {
+		QuickValueEditor("fHackDynamicFrictionMultiplier", fHackDynamicFrictionMultiplier);
+		QuickValueEditor("fHackLoadMultiplier", fHackLoadMultiplier);
+		QuickValueEditor("fHackDriveForceMultiplier", fHackDriveForceMultiplier);
+		QuickValueEditor("fHackLateralForceMultiplier", fHackLateralForceMultiplier);
 		QuickValueEditor("fHackDriveGripMultiplier", fHackDriveGripMultiplier);
 		QuickValueEditor("fHackLateralGripMultiplier", fHackLateralGripMultiplier);
 		QuickValueEditor("fHackRollingResistanceMultiplier", fHackRollingResistanceMultiplier);
@@ -300,6 +326,7 @@ void DebugMenu() {
 		DrawMenuOption(std::format("LateralGripScale - {:.2f}", pSuspension->ComputeLateralGripScale(LastChassisState)));
 		DrawMenuOption(std::format("TractionScale - {:.2f}", pSuspension->ComputeTractionScale(LastChassisState)));
 		DrawMenuOption(std::format("Wheels - {:.2f} {:.2f}", pSuspension->mSteering.Wheels[0], pSuspension->mSteering.Wheels[1]));
+		DrawMenuOption(std::format("LastMaximum - {:.2f}", pSuspension->mSteering.LastMaximum));
 
 		for (int i = 0; i < 4; i++) {
 			auto tire = pSuspension->mTires[i];
@@ -309,6 +336,11 @@ void DebugMenu() {
 			DrawMenuOption(std::format("mCompression - {:.2f}", tire->mCompression));
 			DrawMenuOption(std::format("mLateralSpeed - {:.2f}", tire->mLateralSpeed));
 			DrawMenuOption(std::format("mForce - {:.2f} {:.2f} {:.2f}", tire->mForce.x, tire->mForce.y, tire->mForce.z));
+			DrawMenuOption(std::format("mLongitudeForce - {:.2f}", tire->mLongitudeForce));
+			DrawMenuOption(std::format("mTraction - {:.2f}", tire->mTraction));
+			DrawMenuOption(std::format("mSlip - {:.2f}", tire->mSlip));
+			DrawMenuOption(std::format("mRadius - {:.2f}", tire->mRadius));
+			DrawMenuOption(std::format("mRoadSpeed - {:.2f}", tire->mRoadSpeed));
 			DrawMenuOption(std::format("DRIVE_GRIP - {:.2f}", tire->mSurface.GetLayout()->DRIVE_GRIP));
 			DrawMenuOption(std::format("LATERAL_GRIP - {:.2f}", tire->mSurface.GetLayout()->LATERAL_GRIP));
 			DrawMenuOption(std::format("ROLLING_RESISTANCE - {:.2f}", tire->mSurface.GetLayout()->ROLLING_RESISTANCE));
