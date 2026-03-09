@@ -114,6 +114,13 @@ auto GetMWCarData() {
 	tmp.DIFFERENTIAL[1] = 0.85;
 	tmp.DIFFERENTIAL[2] = 0;
 	tmp.TORQUE_SPLIT = 0;
+
+	tmp.GRIP_SCALE.Front *= fHackGripScale;
+	tmp.GRIP_SCALE.Rear *= fHackGripScale;
+	tmp.DYNAMIC_GRIP.Front *= fHackDynamicGrip;
+	tmp.DYNAMIC_GRIP.Rear *= fHackDynamicGrip;
+	tmp.STATIC_GRIP.pair[0].value *= fHackStaticGrip;
+	tmp.STATIC_GRIP.pair[1].value *= fHackStaticGrip;
 	return &tmp;
 }
 
@@ -805,6 +812,7 @@ void SuspensionRacer::SetCOG(float extra_bias, float extra_ride) {
 																			  INCH2METERS(GetMWCarData()->RIDE_HEIGHT.At(1) + extra_ride)));
 	UMath::Vector3 cog{0.0f, cg_y, cg_z};
 	mRB->SetCenterOfGravity(&cog);
+	mRB->OverrideCOG(&cog);
 }
 
 void SuspensionRacer::DoTireHeat(const State &state) {
@@ -1510,6 +1518,7 @@ void SuspensionRacer::TuneWheelParams(State &state) {
 		}
 
 		// speedbreaker increases front tire friction relative to the absolute steering input
+		// speedbreaker grip boost!!
 		if (mGameBreaker > 0.0f && IsFront(i)) {
 			float over_boost = mGameBreaker * UMath::Abs(state.steer_input) * 0.75f + 1.0f;
 			lateral_boost = over_boost;

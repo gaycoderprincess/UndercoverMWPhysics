@@ -243,6 +243,9 @@ float fHackLateralBoost = 1.0;
 float fHackFrictionBoost = 1.0;
 float fHackLateralForce = 1.0;
 float fHackMaxTraction = 1.0;
+float fHackGripScale = 1.0;
+float fHackDynamicGrip = 1.0;
+float fHackStaticGrip = 1.0;
 
 // up force seems fine
 // driveForce is too low, calculated through GetLongitudeForce, might be too low too
@@ -298,6 +301,9 @@ void DebugMenu() {
 		QuickValueEditor("fHackFrictionBoost", fHackFrictionBoost);
 		QuickValueEditor("fHackLateralForce", fHackLateralForce);
 		QuickValueEditor("fHackMaxTraction", fHackMaxTraction);
+		QuickValueEditor("fHackGripScale", fHackGripScale);
+		QuickValueEditor("fHackDynamicGrip", fHackDynamicGrip);
+		QuickValueEditor("fHackStaticGrip", fHackStaticGrip);
 		//DrawMenuOption(std::format("state.flags - {}", LastChassisState.flags));
 		//DrawMenuOption(std::format("state.time - {}", LastChassisState.time));
 		//DrawMenuOption(std::format("state.mass - {}", LastChassisState.mass));
@@ -308,6 +314,7 @@ void DebugMenu() {
 		DrawMenuOption(std::format("state.steer_input - {:.2f}", LastChassisState.steer_input));
 		DrawMenuOption(std::format("state.nos_boost - {:.2f}", LastChassisState.nos_boost));
 		DrawMenuOption(std::format("state.shift_boost - {:.2f}", LastChassisState.shift_boost));
+		DrawMenuOption(std::format("state.cog - {:.2f} {:.2f} {:.2f}", LastChassisState.cog.x, LastChassisState.cog.y, LastChassisState.cog.z));
 		DrawMenuOption(std::format("mDrift.State - {}", (int)pSuspension->mDrift.State));
 		DrawMenuOption(std::format("mDrift.Value - {:.2f}", pSuspension->mDrift.Value));
 		DrawMenuOption(std::format("mBurnOut.Traction - {:.2f}", pSuspension->mBurnOut.GetTraction()));
