@@ -243,6 +243,7 @@ void DebugMenu() {
 		DrawMenuOption(std::format("fNormal - {:.2f} {:.2f} {:.2f} {:.2f}", tire->mNormal.x, tire->mNormal.y, tire->mNormal.z, tire->mNormal.w));
 		DrawMenuOption(std::format("mCompression - {:.2f}", tire->mCompression));
 		DrawMenuOption(std::format("mLateralSpeed - {:.2f}", tire->mLateralSpeed));
+		DrawMenuOption(std::format("mForce - {:.2f} {:.2f} {:.2f}", tire->mForce.x, tire->mForce.y, tire->mForce.z));
 	}
 	else {
 		DrawMenuOption("woof?");

@@ -1605,25 +1605,42 @@ void SuspensionRacer::DoWheelForces(State &state) {
 			const UMath::Vector3 &force = wheel.GetForce();
 			UMath::RotateTranslate(p, state.matrix, p);
 			wheel.SetPosition(p);
+			WriteLog(std::format("p {:.2f} {:.2f} {:.2f}", p.x, p.y, p.z));
 
-			UMath::Vector3 torque;
-			UMath::Vector3 r;
+			UMath::Vector3 torque = {};
+			UMath::Vector3 r = {};
 			UMath::Sub(p, state.world_cog, r);
 			UMath::Sub(r, state.GetPosition(), r);
-			UMath::Cross(r, force, torque);
+			torque = (UMath::Vector3)r.Cross(force);
+			WriteLog(std::format("r {:.2f} {:.2f} {:.2f}", r.x, r.y, r.z));
+			WriteLog(std::format("force {:.2f} {:.2f} {:.2f}", force.x, force.y, force.z));
+			WriteLog(std::format("torque {:.2f} {:.2f} {:.2f}", torque.x, torque.y, torque.z));
+			//UMath::Cross(r, force, torque);
 			UMath::Add(total_force, force, total_force);
 			UMath::Add(total_torque, torque, total_torque);
 		}
 
-		float yaw = UMath::Dot((UMath::Vector3)state.matrix.y, total_torque);
+		// mw m3 test:
+		// yaw speed is 0.26
+		// matrix y -0.00363379973 0.9999672771 -0.007230669726
+		// total_torque -4137.378418 1823.675293 0.05406260118
+		// or maybe 297.5856934 10732.44727 2017.319824
+		// dot result is... 1.94?
+
+		WriteLog(std::format("total_torque 1 {:.2f} {:.2f} {:.2f}", total_torque.x, total_torque.y, total_torque.z));
+		float yaw = state.matrix.y.Dot(total_torque);
 		//float counter_yaw = yaw * mCarInfo.GetLayout()->YAW_SPEED;
 		float counter_yaw = yaw * *(float*)Attrib::Instance::GetAttributePointer(&mCarInfo, Attrib::StringHash32("YAW_SPEED"), 0); // todo this could crash
 		if (state.driver_style == STYLE_DRAG) {
 			counter_yaw *= Tweak_DragYawSpeed;
 		}
 		UMath::ScaleAdd((UMath::Vector3)state.matrix.y, counter_yaw - yaw, total_torque, total_torque);
+		WriteLog(std::format("state.matrix.y {:.2f} {:.2f} {:.2f}", state.matrix.y.x, state.matrix.y.y, state.matrix.y.z));
+		WriteLog(std::format("yaw {:.2f}", yaw));
+		WriteLog(std::format("counter_yaw {:.2f}", counter_yaw));
+		WriteLog(std::format("total_force {:.2f} {:.2f} {:.2f}", total_force.x, total_force.y, total_force.z));
+		WriteLog(std::format("total_torque 2 {:.2f} {:.2f} {:.2f}", total_torque.x, total_torque.y, total_torque.z));
 		mRB->Resolve(&total_force, &total_torque);
-		WriteLog(std::format("Resolve {:.2f} {:.2f} {:.2f}", total_force.x, total_force.y, total_force.z));
 	}
 
 	if (maxDelta > 0.0f) {
@@ -1848,12 +1865,7 @@ bool MWWheel::UpdatePosition(const UMath::Vector3 &body_av, const UMath::Vector3
 
 	bool result = WWorldPos::Update(&mWorldPos, &mPosition, &mNormal, IsOnGround() && usecache, collider, true);
 	// this is supposed to almost always be negative
-	//mNormal.w = mWorldPos.fHeight;
-	if (result) {
-		//mNormal.w = mWorldPos.fHeight;
-		mNormal.w = ((mWorldPos.fPt0.x - mPosition.x) * mNormal.x) + (((mWorldPos.fPt0.z - mPosition.z) * mNormal.z) + ((mWorldPos.fPt0.y - mPosition.y) * mNormal.y));
-		//mNormal.w += mWorldPos.fYOffset;
-	}
+	mNormal.w = ((mWorldPos.fPt0.x - mPosition.x) * mNormal.x) + (((mWorldPos.fPt0.z - mPosition.z) * mNormal.z) + ((mWorldPos.fPt0.y - mPosition.y) * mNormal.y));
 
 	WriteLog(std::format("result {} surface {:X}", result, (uintptr_t)mWorldPos.pSurface));
 	UpdateSurface(mWorldPos.pSurface);
