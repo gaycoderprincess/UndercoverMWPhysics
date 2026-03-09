@@ -114,13 +114,6 @@ auto GetMWCarData() {
 	tmp.DIFFERENTIAL[1] = 0.85;
 	tmp.DIFFERENTIAL[2] = 0;
 	tmp.TORQUE_SPLIT = 0;
-
-	tmp.GRIP_SCALE.Front *= fHackGripScale;
-	tmp.GRIP_SCALE.Rear *= fHackGripScale;
-	tmp.DYNAMIC_GRIP.Front *= fHackDynamicGrip;
-	tmp.DYNAMIC_GRIP.Rear *= fHackDynamicGrip;
-	tmp.STATIC_GRIP.pair[0].value *= fHackStaticGrip;
-	tmp.STATIC_GRIP.pair[1].value *= fHackStaticGrip;
 	return &tmp;
 }
 
@@ -543,7 +536,7 @@ void SuspensionRacer::CreateTires() {
 		delete mTires[i];
 		bool is_front = IsFront(i);
 		float diameter = WheelDiameter(mCarInfo, is_front);
-		mTires[i] = new Tire(diameter * 0.5f, i, &mCarInfo, &mCarInfo);
+		mTires[i] = new Tire(diameter * 0.5f, i, &mCarInfo);
 	}
 	UMath::Vector3 dimension;
 	GetOwner()->GetRigidBody()->GetDimension(&dimension);
@@ -1466,11 +1459,11 @@ void SuspensionRacer::TuneWheelParams(State &state) {
 	float brake_biased[2] = {state.brake_input, state.brake_input};
 	yawcontrol *= (1.0f - mDrift.Value); // pointless parentheses for matching purposes
 	const Physics::Tunings *tunings = GetVehicle()->GetTunings();
-	//if (tunings) {
-	//	// brake tuning adjusts the brake bias
-	//	brake_biased[0] += brake_biased[0] * tunings->Value[Physics::Tunings::BRAKES] * 0.5f;
-	//	brake_biased[1] -= brake_biased[1] * tunings->Value[Physics::Tunings::BRAKES] * 0.5f;
-	//}
+	if (tunings) {
+		// brake tuning adjusts the brake bias
+		brake_biased[0] += brake_biased[0] * tunings->Value[Physics::Tunings::BRAKES] * 0.5f;
+		brake_biased[1] -= brake_biased[1] * tunings->Value[Physics::Tunings::BRAKES] * 0.5f;
+	}
 	float suspension_yaw_control_limit = CalcYawControlLimit(state.speed);
 	IPlayer *player = GetOwner()->GetPlayer();
 	if (state.driver_style == STYLE_DRAG) {
@@ -1524,15 +1517,15 @@ void SuspensionRacer::TuneWheelParams(State &state) {
 			lateral_boost = over_boost;
 			friction_boost *= over_boost;
 		}
-		mTires[i]->ScaleTractionBoost(friction_boost * fHackFrictionBoost);
-		mTires[i]->SetLateralBoost(lateral_boost * fHackLateralBoost);
+		mTires[i]->ScaleTractionBoost(friction_boost);
+		mTires[i]->SetLateralBoost(lateral_boost);
 
-		//if (tunings) {
-		//	UMath::Vector2 circle;
-		//	circle.x = tunings->Value[Physics::Tunings::HANDLING] * 0.2f + 1.0f;
-		//	circle.y = 1.0f - tunings->Value[Physics::Tunings::HANDLING] * 0.2f;
-		//	mTires[i]->SetTractionCircle(circle);
-		//}
+		if (tunings) {
+			UMath::Vector2 circle;
+			circle.x = tunings->Value[Physics::Tunings::HANDLING] * 0.2f + 1.0f;
+			circle.y = 1.0f - tunings->Value[Physics::Tunings::HANDLING] * 0.2f;
+			mTires[i]->SetTractionCircle(circle);
+		}
 		// traction is increased by perfect shifts in drag races and also by engaging the nitrous
 		mTires[i]->ScaleTractionBoost(state.nos_boost * state.shift_boost);
 
@@ -1699,9 +1692,7 @@ void SuspensionRacer::DoWheelForces(State &state) {
 
 			float traction_force = wheel.UpdateLoaded(xspeed, zspeed, state.speed, load, state.time);
 			float max_traction = UMath::Abs(xspeed / dT * (0.25f * mass));
-			max_traction *= fHackMaxTraction;
 			lateralForce = (UMath::Vector3)(lateralNormal * UMath::Clamp(traction_force, -max_traction, max_traction));
-			lateralForce *= fHackLateralForce;
 
 			UMath::Vector3 force;
 			UMath::UnitCross(lateralNormal, groundNormal, driveForce);

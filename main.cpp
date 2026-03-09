@@ -239,17 +239,6 @@ float Table::GetValue(float input) {
 
 std::vector<float> UNDERCOVER_YawControl = { 0.1, 0.2, 0.65, 1 };
 
-float fHackLateralBoost = 1.0;
-float fHackFrictionBoost = 1.0;
-float fHackLateralForce = 1.0;
-float fHackMaxTraction = 1.0;
-float fHackGripScale = 1.0;
-float fHackDynamicGrip = 1.0;
-float fHackStaticGrip = 1.0;
-
-// up force seems fine
-// driveForce is too low, calculated through GetLongitudeForce, might be too low too
-
 #include "decomp/AverageWindow.h"
 #include "decomp/SuspensionRacer.h"
 #include "decomp/MWChassis.cpp"
@@ -297,13 +286,6 @@ void DebugMenu() {
 	ChloeMenuLib::BeginMenu();
 
 	if (pSuspension) {
-		QuickValueEditor("fHackLateralBoost", fHackLateralBoost);
-		QuickValueEditor("fHackFrictionBoost", fHackFrictionBoost);
-		QuickValueEditor("fHackLateralForce", fHackLateralForce);
-		QuickValueEditor("fHackMaxTraction", fHackMaxTraction);
-		QuickValueEditor("fHackGripScale", fHackGripScale);
-		QuickValueEditor("fHackDynamicGrip", fHackDynamicGrip);
-		QuickValueEditor("fHackStaticGrip", fHackStaticGrip);
 		//DrawMenuOption(std::format("state.flags - {}", LastChassisState.flags));
 		//DrawMenuOption(std::format("state.time - {}", LastChassisState.time));
 		//DrawMenuOption(std::format("state.mass - {}", LastChassisState.mass));

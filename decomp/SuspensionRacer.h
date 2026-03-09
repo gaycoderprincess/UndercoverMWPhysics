@@ -238,8 +238,8 @@ public:
 
 	class Tire : public MWWheel {
 	public:
-		Tire(float radius, int index, const Attrib::Gen::car_tuning *specs, const Attrib::Gen::car_tuning *brakes)
-				: MWWheel(1), mRadius(UMath::Max(radius, 0.1f)), mWheelIndex(index), mAxleIndex(index >> 1), mSpecs(specs), mBrakes(brakes), mBrake(0.0f),
+		Tire(float radius, int index, const Attrib::Gen::car_tuning *specs)
+				: MWWheel(1), mRadius(UMath::Max(radius, 0.1f)), mWheelIndex(index), mAxleIndex(index >> 1), mSpecs(specs), mBrake(0.0f),
 				  mEBrake(0.0f), mAV(0.0f), mLoad(0.0f), mLateralForce(0.0f), mLongitudeForce(0.0f), mDriveTorque(0.0f), mBrakeTorque(0.0f), mLateralBoost(1.0f),
 				  mTractionBoost(1.0f), mSlip(0.0f), mLastTorque(0.0f), mRoadSpeed(0.0f), mAngularAcc(0.0f), mTraction(1.0f), mBottomOutTime(0.0f),
 				  mSlipAngle(0.0f), mTractionCircle(UMath::Vector2(1.0f, 1.0f)), mMaxSlip(0.5f), mGripBoost(1.0f), mDriftFriction(1.0f), mLateralSpeed(0.0f),
@@ -391,7 +391,6 @@ public:
 		const int mWheelIndex;              // offset 0xF8, size 0x4
 		float mRoadSpeed;                   // offset 0xFC, size 0x4
 		const Attrib::Gen::car_tuning *mSpecs;   // offset 0x100, size 0x4
-		const Attrib::Gen::car_tuning *mBrakes; // offset 0x104, size 0x4
 		float mAngularAcc;                  // offset 0x108, size 0x4
 		const int mAxleIndex;               // offset 0x10C, size 0x4
 		float mTraction;                    // offset 0x110, size 0x4
