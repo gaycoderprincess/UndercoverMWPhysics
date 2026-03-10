@@ -225,14 +225,14 @@ namespace MWChassis {
 	float __thiscall GetWheelTraction(uintptr_t ptr, unsigned int index) {
 		ICHASSIS_FUNCTION_LOG("GetWheelTraction");
 		auto pThis = GetSuspensionRacer(ptr);
-		//return pThis->mTires[index]->GetTraction();
-		return 1.0;
+		return pThis->mTires[index]->GetTraction();
 	}
 	float __thiscall GetWheelSlipRatio(uintptr_t ptr, unsigned int index) { // todo this is weird
 		ICHASSIS_FUNCTION_LOG("GetWheelSlipRatio");
 		auto pThis = GetSuspensionRacer(ptr);
-		if (pThis->mTires[index]->mRoadSpeed < 1.0f) return 0.0;
-		return pThis->mTires[index]->GetSlipAngle() / pThis->mTires[index]->GetToleratedSlip();
+		//if (pThis->mTires[index]->mRoadSpeed < 1.0f) return 0.0;
+		//return pThis->mTires[index]->GetSlipAngle() / pThis->mTires[index]->GetToleratedSlip();
+		return pThis->mTires[index]->GetCurrentSlip();
 	}
 	float __thiscall GetDragBoost(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDragBoost");
@@ -245,12 +245,12 @@ namespace MWChassis {
 	const UMath::Vector3 *__thiscall GetWheelPos(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelPos");
 		auto pThis = GetSuspensionRacer(ptr);
-		return &pThis->mTires[i]->mPosition;
+		return &pThis->GetWheelPos(i);
 	}
 	const UMath::Vector3 *__thiscall GetWheelLocalPos(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelLocalPos");
 		auto pThis = GetSuspensionRacer(ptr);
-		return &pThis->mTires[i]->mLocalArm;
+		return &pThis->GetWheelLocalPos(i);
 	}
 	UMath::Vector3 *__thiscall GetWheelCenterPos(uintptr_t ptr, UMath::Vector3 *result, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelCenterPos");
@@ -281,12 +281,12 @@ namespace MWChassis {
 	float __thiscall GetWheelRoadHeight(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelRoadHeight");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[i]->GetNormal().w;
+		return pThis->GetWheelRoadHeight(i);
 	}
 	bool __thiscall IsWheelOnGround(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("IsWheelOnGround");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[i]->IsOnGround();
+		return pThis->IsWheelOnGround(i);
 	}
 	float __thiscall GetSuspensionMaxTravel(uintptr_t ptr, unsigned int i) { // todo is this correct
 		ICHASSIS_FUNCTION_LOG("GetSuspensionMaxTravel");
@@ -296,7 +296,7 @@ namespace MWChassis {
 	float __thiscall GetCompression(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetCompression");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[i]->GetCompression();
+		return pThis->GetCompression(i);
 	}
 	float __thiscall GuessCompression(uintptr_t ptr, unsigned int id, float downforce) {
 		ICHASSIS_FUNCTION_LOG("GuessCompression");
@@ -337,27 +337,27 @@ namespace MWChassis {
 	float __thiscall GetWheelSlipAngle(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetWheelSlipAngle");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[id]->GetSlipAngle();
+		return pThis->GetWheelSlipAngle(id);
 	}
 	const UMath::Vector3* __thiscall GetWheelRoadNormal(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetWheelRoadNormal");
 		auto pThis = GetSuspensionRacer(ptr);
-		return (UMath::Vector3*)&pThis->mTires[id]->mNormal;
+		return (UMath::Vector3*)&pThis->GetWheelRoadNormal(id);
 	}
 	const SimSurface* __thiscall GetWheelRoadSurface(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetWheelRoadSurface");
 		auto pThis = GetSuspensionRacer(ptr);
-		return &pThis->mTires[id]->mSurface;
+		return pThis->GetWheelRoadSurface(id);
 	}
 	const UMath::Vector3* __thiscall GetWheelVelocity(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetWheelVelocity");
 		auto pThis = GetSuspensionRacer(ptr);
-		return (UMath::Vector3*)&pThis->mTires[id]->mVelocity;
+		return &pThis->GetWheelVelocity(id);
 	}
 	int __thiscall GetNumWheelsOnGround(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetNumWheelsOnGround");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mNumWheelsOnGround;
+		return pThis->GetNumWheelsOnGround();
 	}
 	unsigned int __thiscall GetNumWheelsOnBand(uintptr_t ptr) { // todo what is this?
 		ICHASSIS_FUNCTION_LOG("GetNumWheelsOnBand");
@@ -382,7 +382,7 @@ namespace MWChassis {
 	float __thiscall GetWheelSteer(uintptr_t ptr, unsigned int wheel) {
 		ICHASSIS_FUNCTION_LOG("GetWheelSteer");
 		auto pThis = GetSuspensionRacer(ptr);
-		return wheel < 2 ? RAD2ANGLE(pThis->mSteering.Wheels[wheel]) : 0.0f;
+		return pThis->GetWheelSteer(wheel);
 	}
 	bool __thiscall CalculateFFBSteeringState(uintptr_t ptr, FFBSteeringState*) {
 		ICHASSIS_FUNCTION_LOG("CalculateFFBSteeringState");
@@ -417,7 +417,7 @@ namespace MWChassis {
 	float __thiscall GetMaxSteering(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetMaxSteering");
 		auto pThis = GetSuspensionRacer(ptr);
-		return DEG2ANGLE(pThis->mSteering.Maximum);
+		return pThis->GetMaxSteering();
 	}
 	void __thiscall MatchSpeed(uintptr_t ptr, float speed, bool for_nis) {
 		ICHASSIS_FUNCTION_LOG("MatchSpeed");

@@ -819,7 +819,7 @@ void SuspensionRacer::DoDriveForces(State &state) {
 		return;
 	}
 
-	float drive_torque = mTransmission->GetDriveTorque();
+	float drive_torque = mTransmission->GetDriveTorqueAtEngine();
 	SuspensionRacer::Differential center_diff{};
 	if (drive_torque == 0.0f) {
 		return;
@@ -1152,7 +1152,7 @@ float SuspensionRacer::CalcYawControlLimit(float speed) const {
 
 		// todo!! these are different in uc!
 #ifdef SUSPENSIONRACER_ELISE_TEST
-		/*unsigned int numunits = GetMWCarData(this)->YAW_CONTROL.size();
+		unsigned int numunits = GetMWCarData(this)->YAW_CONTROL.size();
 		if (numunits > 1) {
 			float ratio = (numunits - 1) * percent;
 			unsigned int index1 = static_cast<unsigned int>(ratio);
@@ -1161,7 +1161,7 @@ float SuspensionRacer::CalcYawControlLimit(float speed) const {
 			float a = GetMWCarData(this)->YAW_CONTROL[index1];
 			float b = GetMWCarData(this)->YAW_CONTROL[index2];
 			return a + (b - a) * ratio;
-		}*/
+		}
 #else
 		unsigned int numunits = UNDERCOVER_YawControl.size();
 		if (numunits > 1) {
@@ -1355,14 +1355,14 @@ void SuspensionRacer::TuneWheelParams(State &state) {
 	IPlayer *player = GetOwner()->GetPlayer();
 	if (state.driver_style == STYLE_DRAG) {
 		suspension_yaw_control_limit = 0.1f;
-	} else if (player) {
-		PlayerSettings *settings = player->GetSettings();
-		if (settings) {
-			// increase yaw control limit when stability control is off (unused by normal means)
-			if (!settings->Handling) {
-				suspension_yaw_control_limit += 2.5f;
-			}
-		}
+	//} else if (player) {
+	//	PlayerSettings *settings = player->GetSettings();
+	//	if (settings) {
+	//		// increase yaw control limit when stability control is off (unused by normal means)
+	//		if (!settings->Handling) {
+	//			suspension_yaw_control_limit += 2.5f;
+	//		}
+	//	}
 	}
 
 	float max_slip = 0.0f;

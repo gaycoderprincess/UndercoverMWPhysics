@@ -692,8 +692,9 @@ public:
 
 	// hack around this enough so the compiler doesn't complain about the vtable being missing
 	IChassis* GetIChassis() {
-		auto addr = (uintptr_t)(this + offsetof(SuspensionRacer, tmpChassis));
-		return (IChassis*)addr;
+		auto ptr = (uintptr_t)this;
+		ptr += offsetof(SuspensionRacer, tmpChassis);
+		return (IChassis*)ptr;
 	}
 
 	void OnOwnerAttached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerAttached"); }
@@ -742,6 +743,43 @@ public:
 	const Physics::Tunings* GetVehicleTunings() {
 		return nullptr;
 		//return GetVehicle()->GetTunings();
+	}
+
+	const UMath::Vector3 &GetWheelPos(unsigned int i) const {
+		return mTires[i]->GetPosition();
+	}
+	const UMath::Vector3 &GetWheelLocalPos(unsigned int i) const {
+		return mTires[i]->GetLocalArm();
+	}
+	const float GetWheelRoadHeight(unsigned int i) const {
+		return mTires[i]->GetNormal().w;
+	}
+	float GetCompression(unsigned int i) const {
+		return mTires[i]->GetCompression();
+	}
+	const UMath::Vector4 &GetWheelRoadNormal(unsigned int i) const {
+		return mTires[i]->GetNormal();
+	}
+	bool IsWheelOnGround(unsigned int i) const {
+		return mTires[i]->IsOnGround();
+	}
+	const SimSurface* GetWheelRoadSurface(unsigned int i) const {
+		return mTires[i]->GetSurface();
+	}
+	const UMath::Vector3 &GetWheelVelocity(unsigned int i) const {
+		return mTires[i]->GetVelocity();
+	}
+	int GetNumWheelsOnGround() const {
+		return mNumWheelsOnGround;
+	}
+	float GetWheelSteer(unsigned int wheel) const {
+		return wheel < 2 ? RAD2ANGLE(mSteering.Wheels[wheel]) : 0.0f;
+	}
+	float GetMaxSteering() const {
+		return DEG2ANGLE(mSteering.Maximum);
+	}
+	float GetWheelSlipAngle(unsigned int idx) const {
+		return mTires[idx]->GetSlipAngle();
 	}
 };
 

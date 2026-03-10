@@ -370,6 +370,17 @@ SuspensionRacer* ChassisHumanConstructHooked(BehaviorParams* bp) {
 	return data;
 }
 
+void AssistLoop() {
+	auto list = VEHICLE_LIST::GetList(VEHICLE_PLAYERS);
+	if (list.empty()) return;
+
+	auto ply = list[0];
+	for (int i = 0; i < DRIVER_AID_NUMBER; i++) {
+		if (ply->GetDriverAidLevel((DriverAidType)i) == 0) continue;
+		ply->SetDriverAidLevel((DriverAidType)i, 0);
+	}
+}
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 	switch( fdwReason ) {
 		case DLL_PROCESS_ATTACH: {
@@ -377,6 +388,9 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 				MessageBoxA(nullptr, "Unsupported game version! Make sure you're using v1.0.0.1 (.exe size of 10584064 or 10589456 bytes)", "nya?!~", MB_ICONERROR);
 				return TRUE;
 			}
+
+			NyaHooks::WorldServiceHook::Init();
+			NyaHooks::WorldServiceHook::aPreFunctions.push_back(AssistLoop);
 
 			ChloeMenuLib::RegisterMenu("Debug Menu", &DebugMenu);
 
