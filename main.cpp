@@ -286,6 +286,17 @@ void DebugMenu() {
 	ChloeMenuLib::BeginMenu();
 
 	if (pSuspension) {
+		ISteeringWheel::SteeringType steer_type = ISteeringWheel::kGamePad;
+
+		if (IPlayer *player = PLAYER_LIST::GetList(PLAYER_LOCAL)[0]) {
+			ISteeringWheel *device = player->GetSteeringDevice();
+
+			if (device && device->IsConnected()) {
+				steer_type = device->GetSteeringType();
+			}
+		}
+		DrawMenuOption(std::format("steer_type {}", (int)steer_type));
+
 		DrawMenuOption(std::format("state.inertia {:.2f} {:.2f} {:.2f}", LastChassisState.inertia.x, LastChassisState.inertia.y, LastChassisState.inertia.z));
 		DrawMenuOption(std::format("state.dimension {:.2f} {:.2f} {:.2f}", LastChassisState.dimension.x, LastChassisState.dimension.y, LastChassisState.dimension.z));
 		DrawMenuOption(std::format("state.cog {:.2f} {:.2f} {:.2f}", LastChassisState.cog.x, LastChassisState.cog.y, LastChassisState.cog.z));
