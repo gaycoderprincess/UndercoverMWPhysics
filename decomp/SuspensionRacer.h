@@ -7,6 +7,8 @@ float UNDERCOVER_SuspensionAtValue = 0.0;
 float UNDERCOVER_SteeringAtValue = 0.0;
 
 struct MWCarTuning {
+	std::string carName;
+
 	struct TempTable {
 		float value;
 
@@ -69,59 +71,119 @@ struct MWCarTuning {
 	//float TORQUE_CONVERTER;
 	float TORQUE_SPLIT;
 };
-
-// data from mw elise
-Attrib::Gen::car_tuning::_LayoutStruct* gCurrentCarInfo = nullptr;
-auto GetMWCarData() {
-#ifdef SUSPENSIONRACER_ELISE_TEST
-	static MWCarTuning tmp;
-	// chassis
-	tmp.AERO_CG = 50.0;
-	tmp.AERO_COEFFICIENT = 0.14;
-	tmp.DRAG_COEFFICIENT = 0.22;
-	tmp.FRONT_AXLE = 1.13;
-	tmp.FRONT_WEIGHT_BIAS = 53;
-	tmp.RENDER_MOTION = 1.0;
-	tmp.RIDE_HEIGHT = {8,8};
-	tmp.ROLL_CENTER = 11;
-	tmp.SHOCK_BLOWOUT = 5;
-	tmp.SHOCK_DIGRESSION = {0.1,0.1};
-	tmp.SHOCK_EXT_STIFFNESS = {35,35};
-	tmp.SHOCK_STIFFNESS = {30,30};
-	tmp.SHOCK_VALVING = {18,18};
-	tmp.SPRING_PROGRESSION = {6.1,6.1};
-	tmp.SPRING_STIFFNESS = {450,400};
-	tmp.SWAYBAR_STIFFNESS = {200,200};
-	tmp.TRACK_WIDTH = {1.465,1.522};
-	tmp.TRAVEL = {6.5,6.5};
-	tmp.WHEEL_BASE = 2.35;
-
-	// brakes
-	tmp.BRAKE_LOCK = {1.0,2.75};
-	tmp.BRAKES = {280,350};
-	tmp.EBRAKE = 400;
-
-	// tires
-	tmp.ASPECT_RATIO = {45,45};
-	tmp.DYNAMIC_GRIP = {1.4,1.5};
-	tmp.GRIP_SCALE = {1.0,1.0};
-	tmp.RIM_SIZE = {17,17};
-	tmp.SECTION_WIDTH = {225,225};
-	tmp.STATIC_GRIP = {1.6,1.7};
-	tmp.STEERING = 1.0;
-	tmp.YAW_CONTROL = {0.0, 0.1, 0.3, 1.0};
-	tmp.YAW_SPEED = 0.4;
-
-	// transmission
-	tmp.DIFFERENTIAL[0] = 0.85;
-	tmp.DIFFERENTIAL[1] = 0.85;
-	tmp.DIFFERENTIAL[2] = 0;
-	tmp.TORQUE_SPLIT = 0;
-	return &tmp;
-#else
-	return gCurrentCarInfo;
-#endif
+std::vector<MWCarTuning> aCarTunings;
+MWCarTuning* GetCarTuning(const char* model) {
+	for (auto& tuning : aCarTunings) {
+		if (tuning.carName == model) return &tuning;
+	}
+	return &aCarTunings[0];
 }
+
+void InitMWCarTunings() {
+	{
+		MWCarTuning tmp;
+		tmp.carName = "elise";
+		// chassis
+		tmp.AERO_CG = 50.0;
+		tmp.AERO_COEFFICIENT = 0.14;
+		tmp.DRAG_COEFFICIENT = 0.22;
+		tmp.FRONT_AXLE = 1.13;
+		tmp.FRONT_WEIGHT_BIAS = 53;
+		tmp.RENDER_MOTION = 1.0;
+		tmp.RIDE_HEIGHT = {8, 8};
+		tmp.ROLL_CENTER = 11;
+		tmp.SHOCK_BLOWOUT = 5;
+		tmp.SHOCK_DIGRESSION = {0.1, 0.1};
+		tmp.SHOCK_EXT_STIFFNESS = {35, 35};
+		tmp.SHOCK_STIFFNESS = {30, 30};
+		tmp.SHOCK_VALVING = {18, 18};
+		tmp.SPRING_PROGRESSION = {6.1, 6.1};
+		tmp.SPRING_STIFFNESS = {450, 400};
+		tmp.SWAYBAR_STIFFNESS = {200, 200};
+		tmp.TRACK_WIDTH = {1.465, 1.522};
+		tmp.TRAVEL = {6.5, 6.5};
+		tmp.WHEEL_BASE = 2.35;
+
+		// brakes
+		tmp.BRAKE_LOCK = {1.0, 2.75};
+		tmp.BRAKES = {280, 350};
+		tmp.EBRAKE = 400;
+
+		// tires
+		tmp.ASPECT_RATIO = {45, 45};
+		tmp.DYNAMIC_GRIP = {1.4, 1.5};
+		tmp.GRIP_SCALE = {1.0, 1.0};
+		tmp.RIM_SIZE = {17, 17};
+		tmp.SECTION_WIDTH = {225, 225};
+		tmp.STATIC_GRIP = {1.6, 1.7};
+		tmp.STEERING = 1.0;
+		tmp.YAW_CONTROL = {0.0, 0.1, 0.3, 1.0};
+		tmp.YAW_SPEED = 0.4;
+
+		// transmission
+		tmp.DIFFERENTIAL[0] = 0.85;
+		tmp.DIFFERENTIAL[1] = 0.85;
+		tmp.DIFFERENTIAL[2] = 0.0;
+		tmp.TORQUE_SPLIT = 0.0;
+		aCarTunings.push_back(tmp);
+	}
+	{
+		MWCarTuning tmp;
+		tmp.carName = "gti_top";
+		// chassis
+		tmp.AERO_CG = 47.0;
+		tmp.AERO_COEFFICIENT = 0.24;
+		tmp.DRAG_COEFFICIENT = 0.35;
+		tmp.FRONT_AXLE = 1.17;
+		tmp.FRONT_WEIGHT_BIAS = 53.25;
+		tmp.RENDER_MOTION = 0.5;
+		tmp.RIDE_HEIGHT = {8, 8};
+		tmp.ROLL_CENTER = 9;
+		tmp.SHOCK_BLOWOUT = 5;
+		tmp.SHOCK_DIGRESSION = {0.1, 0.1};
+		tmp.SHOCK_EXT_STIFFNESS = {65, 65};
+		tmp.SHOCK_STIFFNESS = {60, 55};
+		tmp.SHOCK_VALVING = {20, 20};
+		tmp.SPRING_PROGRESSION = {7, 7};
+		tmp.SPRING_STIFFNESS = {450, 400};
+		tmp.SWAYBAR_STIFFNESS = {500, 500};
+		tmp.TRACK_WIDTH = {1.539, 1.538};
+		tmp.TRAVEL = {6.5, 6.5};
+		tmp.WHEEL_BASE = 2.578;
+
+		// brakes
+		tmp.BRAKE_LOCK = {1.0, 3.5};
+		tmp.BRAKES = {390, 475};
+		tmp.EBRAKE = 750;
+
+		// tires
+		tmp.ASPECT_RATIO = {45, 45};
+		tmp.DYNAMIC_GRIP = {1.85, 1.9};
+		tmp.GRIP_SCALE = {1.05, 1.1};
+		tmp.RIM_SIZE = {17, 17};
+		tmp.SECTION_WIDTH = {235, 235};
+		tmp.STATIC_GRIP = {2.1, 2.1};
+		tmp.STEERING = 1.0;
+		tmp.YAW_CONTROL = {0.1, 0.6, 0.8, 1.25};
+		tmp.YAW_SPEED = 0.35;
+
+		// transmission
+		tmp.DIFFERENTIAL[0] = 0.7;
+		tmp.DIFFERENTIAL[1] = 0.7;
+		tmp.DIFFERENTIAL[2] = 0.0;
+		tmp.TORQUE_SPLIT = 1.0;
+		aCarTunings.push_back(tmp);
+	}
+}
+
+class SuspensionRacer;
+Attrib::Gen::car_tuning::_LayoutStruct* gCurrentCarInfo = nullptr;
+
+#ifdef SUSPENSIONRACER_ELISE_TEST
+MWCarTuning* GetMWCarData(const SuspensionRacer* pThis);
+#else
+Attrib::Gen::car_tuning::_LayoutStruct* GetMWCarData(const SuspensionRacer* pThis);
+#endif
 
 class MWWheel {
 public:
@@ -609,11 +671,11 @@ public:
 	}
 
 	bool RearWheelDrive() {
-		return GetMWCarData()->TORQUE_SPLIT < 1.0f;
+		return GetMWCarData(this)->TORQUE_SPLIT < 1.0f;
 	}
 
 	bool FrontWheelDrive() {
-		return GetMWCarData()->TORQUE_SPLIT > 0.0f;
+		return GetMWCarData(this)->TORQUE_SPLIT > 0.0f;
 	}
 
 	bool IsDriveWheel(unsigned int i) {
@@ -677,3 +739,19 @@ public:
 	void DoJumpStabilizer(const State& bp);
 	void DoDriveForces(State &state);
 };
+
+#ifdef SUSPENSIONRACER_ELISE_TEST
+MWCarTuning* GetMWCarData(const SuspensionRacer* pThis) {
+	return GetCarTuning("gti");
+}
+MWCarTuning* GetMWCarData(const SuspensionRacer::Tire* pThis) { // todo
+	return GetCarTuning("gti");
+}
+#else
+Attrib::Gen::car_tuning::_LayoutStruct* GetMWCarData(const SuspensionRacer* pThis) {
+	return gCurrentCarInfo;
+}
+Attrib::Gen::car_tuning::_LayoutStruct* GetMWCarData(const SuspensionRacer::Tire* pThis) {
+	return gCurrentCarInfo;
+}
+#endif

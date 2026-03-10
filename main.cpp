@@ -297,6 +297,14 @@ void DebugMenu() {
 		}
 		DrawMenuOption(std::format("steer_type {}", (int)steer_type));
 
+		//QuickValueEditor("BrakesAtValue", UNDERCOVER_BrakesAtValue);
+		//QuickValueEditor("StaticGripAtValue", UNDERCOVER_StaticGripAtValue);
+		//QuickValueEditor("RollCenterAtValue", UNDERCOVER_RollCenterAtValue);
+		//QuickValueEditor("AeroCGAtValue", UNDERCOVER_AeroCGAtValue);
+		//QuickValueEditor("AeroCoeffAtValue", UNDERCOVER_AeroCoeffAtValue);
+		//QuickValueEditor("SuspensionAtValue", UNDERCOVER_SuspensionAtValue);
+		//QuickValueEditor("SteeringAtValue", UNDERCOVER_SteeringAtValue);
+
 		DrawMenuOption(std::format("state.inertia {:.2f} {:.2f} {:.2f}", LastChassisState.inertia.x, LastChassisState.inertia.y, LastChassisState.inertia.z));
 		DrawMenuOption(std::format("state.dimension {:.2f} {:.2f} {:.2f}", LastChassisState.dimension.x, LastChassisState.dimension.y, LastChassisState.dimension.z));
 		DrawMenuOption(std::format("state.cog {:.2f} {:.2f} {:.2f}", LastChassisState.cog.x, LastChassisState.cog.y, LastChassisState.cog.z));
@@ -371,6 +379,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 			}
 
 			ChloeMenuLib::RegisterMenu("Debug Menu", &DebugMenu);
+
+			InitMWCarTunings();
 
 			//NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x73F88D, 0x6DB670);
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73F830, &ChassisHumanConstructHooked);
