@@ -6,6 +6,121 @@ float UNDERCOVER_AeroCoeffAtValue = 0.0;
 float UNDERCOVER_SuspensionAtValue = 0.0;
 float UNDERCOVER_SteeringAtValue = 0.0;
 
+struct MWCarTuning {
+	struct TempTable {
+		float value;
+
+		TempTable() {}
+		TempTable(float f) { value = f; }
+		float GetValue(float) { return value; }
+	};
+
+	struct TempAxlePairTable {
+		TempTable pair[2];
+
+		TempTable& At(int i) { return pair[i]; }
+	};
+
+	// chassis
+	TempTable AERO_CG;
+	TempTable AERO_COEFFICIENT;
+	float DRAG_COEFFICIENT;
+	float FRONT_AXLE;
+	float FRONT_WEIGHT_BIAS;
+	float RENDER_MOTION;
+	AxlePair RIDE_HEIGHT;
+	TempTable ROLL_CENTER;
+	float SHOCK_BLOWOUT;
+	AxlePair SHOCK_DIGRESSION;
+	TempAxlePairTable SHOCK_EXT_STIFFNESS;
+	TempAxlePairTable SHOCK_STIFFNESS;
+	AxlePair SHOCK_VALVING;
+	AxlePair SPRING_PROGRESSION;
+	AxlePair SPRING_STIFFNESS;
+	TempAxlePairTable SWAYBAR_STIFFNESS;
+	AxlePair TRACK_WIDTH;
+	AxlePair TRAVEL;
+	float WHEEL_BASE;
+
+	// brakes
+	AxlePair BRAKE_LOCK;
+	TempAxlePairTable BRAKES;
+	TempTable EBRAKE;
+
+	// tires
+	AxlePair ASPECT_RATIO;
+	AxlePair DYNAMIC_GRIP;
+	AxlePair GRIP_SCALE;
+	AxlePair RIM_SIZE;
+	AxlePair SECTION_WIDTH;
+	TempAxlePairTable STATIC_GRIP;
+	TempTable STEERING;
+	std::vector<float> YAW_CONTROL;
+	float YAW_SPEED;
+
+	// transmission
+	//float CLUTCH_SLIP;
+	float DIFFERENTIAL[3];
+	//float FINAL_GEAR;
+	//float GEAR_EFFICIENCY[9];
+	//float GEAR_RATIO[9];
+	//float OPTIMAL_SHIFT;
+	//float SHIFT_SPEED;
+	//float TORQUE_CONVERTER;
+	float TORQUE_SPLIT;
+};
+
+// data from mw elise
+Attrib::Gen::car_tuning::_LayoutStruct* gCurrentCarInfo = nullptr;
+auto GetMWCarData() {
+	//return gCurrentCarInfo;
+
+	static MWCarTuning tmp;
+	// chassis
+	tmp.AERO_CG = 50.0;
+	tmp.AERO_COEFFICIENT = 0.14;
+	tmp.DRAG_COEFFICIENT = 0.22;
+	tmp.FRONT_AXLE = 1.13;
+	tmp.FRONT_WEIGHT_BIAS = 53;
+	tmp.RENDER_MOTION = 1.0;
+	tmp.RIDE_HEIGHT = {8,8};
+	tmp.ROLL_CENTER = 11;
+	tmp.SHOCK_BLOWOUT = 5;
+	tmp.SHOCK_DIGRESSION = {0.1,0.1};
+	tmp.SHOCK_EXT_STIFFNESS = {35,35};
+	tmp.SHOCK_STIFFNESS = {30,30};
+	tmp.SHOCK_VALVING = {18,18};
+	tmp.SPRING_PROGRESSION = {6.1,6.1};
+	tmp.SPRING_STIFFNESS = {450,400};
+	tmp.SWAYBAR_STIFFNESS = {200,200};
+	tmp.TRACK_WIDTH = {1.465,1.522};
+	tmp.TRAVEL = {6.5,6.5};
+	tmp.WHEEL_BASE = 2.35;
+
+	// brakes
+	tmp.BRAKE_LOCK = {1.0,2.75};
+	tmp.BRAKES = {280,350};
+	tmp.EBRAKE = 400;
+
+	// tires
+	tmp.ASPECT_RATIO = {45,45};
+	tmp.DYNAMIC_GRIP = {1.4,1.5};
+	tmp.GRIP_SCALE = {1.0,1.0};
+	tmp.RIM_SIZE = {17,17};
+	tmp.SECTION_WIDTH = {225,225};
+	tmp.STATIC_GRIP = {1.6,1.7};
+	tmp.STEERING = 1.0;
+	tmp.YAW_CONTROL = {0.0, 0.1, 0.3, 1.0};
+	tmp.YAW_SPEED = 0.4;
+
+	// transmission
+	tmp.DIFFERENTIAL[0] = 0.85;
+	tmp.DIFFERENTIAL[1] = 0.85;
+	tmp.DIFFERENTIAL[2] = 0;
+	tmp.TORQUE_SPLIT = 0;
+	return &tmp;
+}
+
 class MWWheel {
 public:
 	WWorldPos mWorldPos;

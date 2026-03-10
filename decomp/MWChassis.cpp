@@ -159,7 +159,7 @@ namespace MWChassis {
 	float __thiscall GetSuspensionMaxTravel(uintptr_t ptr, unsigned int i) { // todo is this correct
 		ICHASSIS_FUNCTION_LOG("GetSuspensionMaxTravel");
 		auto pThis = GetSuspensionRacer(ptr);
-		return INCH2METERS(pThis->mCarInfo.GetLayout()->TRAVEL.At(IsRear(i)));
+		return INCH2METERS(GetMWCarData()->TRAVEL.At(IsRear(i)));
 	}
 	float __thiscall GetCompression(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetCompression");
@@ -172,7 +172,7 @@ namespace MWChassis {
 		float compression = 0.0f;
 		if (downforce < 0.0f) {
 			unsigned int axle = id / 2;
-			float spring_weight = LBIN2NM(pThis->mCarInfo.GetLayout()->SPRING_STIFFNESS.At(axle));
+			float spring_weight = LBIN2NM(GetMWCarData()->SPRING_STIFFNESS.At(axle));
 			downforce *= 0.25f;
 			compression = -downforce / spring_weight;
 		}
@@ -260,7 +260,7 @@ namespace MWChassis {
 	float __thiscall GetSuspensionDigression(uintptr_t ptr, unsigned int i) { // todo is this correct
 		ICHASSIS_FUNCTION_LOG("GetSuspensionDigression");
 		auto pThis = GetSuspensionRacer(ptr);
-		return 1.0f - pThis->mCarInfo.GetLayout()->SHOCK_DIGRESSION.At(IsRear(i));
+		return 1.0f - GetMWCarData()->SHOCK_DIGRESSION.At(IsRear(i));
 	}
 	float __thiscall GetWheelLateralForce(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelLateralForce");
@@ -300,7 +300,7 @@ namespace MWChassis {
 	float __thiscall GetRenderMotion(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetRenderMotion");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mCarInfo.GetLayout()->RENDER_MOTION;
+		return GetMWCarData()->RENDER_MOTION;
 	}
 	ISteeringWheel::SteeringType __thiscall GetSteeringType(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetSteeringType");
@@ -364,12 +364,12 @@ namespace MWChassis {
 	float __thiscall GetDragCoefficient(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDragCoefficient");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mCarInfo.GetLayout()->DRAG_COEFFICIENT;
+		return GetMWCarData()->DRAG_COEFFICIENT;
 	}
 	float __thiscall GetDownCoefficient(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDownCoefficient");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mCarInfo.GetLayout()->AERO_COEFFICIENT.GetValue(UNDERCOVER_AeroCoeffAtValue);
+		return GetMWCarData()->AERO_COEFFICIENT.GetValue(UNDERCOVER_AeroCoeffAtValue);
 	}
 	float __thiscall GetStaticGripForSpeed(uintptr_t ptr, float f) { // todo
 		ICHASSIS_FUNCTION_LOG("GetStaticGripForSpeed");
