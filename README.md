@@ -2,7 +2,7 @@
 
 Experiment for Need for Speed: Undercover that converts the physics model from Most Wanted and Carbon
 
-Massive thanks to everyone involved with [dbalatoni's MW reverse engineering project](https://github.com/dbalatoni13/nfsmw), this mod was heavily based off of it.
+Massive thanks to everyone involved with [dbalatoni13's MW reverse engineering project](https://github.com/dbalatoni13/nfsmw), this mod was heavily based off of it.
 
 ## Installation
 
@@ -13,7 +13,7 @@ Massive thanks to everyone involved with [dbalatoni's MW reverse engineering pro
 ## Known issues
 
 - The clutch might occasionally get stuck and leave you unable to drive, release and re-press the gas pedal to fix it
-- Launching at race starts might not work if you're fully revved as the counter hits 0
+- Launching at race starts might not work if you're fully revved when the counter hits 0
 
 ## Building
 
