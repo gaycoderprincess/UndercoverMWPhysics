@@ -4,6 +4,142 @@ namespace MWChassis {
 		return (SuspensionRacer*)ptr;
 	}
 
+	// calls in one frame:
+	// IChassis::IsStaticResetCondition called from 43416C - AIVehicleHuman::OnTaskSimulate, resets the car if needed
+	// IChassis::GetNumWheels called from 72D97A - don't run EngineRacer code if wheel count isn't 4
+	// IChassis::GetWheelTraction called from 719550 - EngineRacer::DoThrottle
+	// IChassis::GetWheelTraction called from 719563 - EngineRacer::DoThrottle
+	// IChassis::GetWheelTraction called from 71957A - EngineRacer::DoThrottle
+	// IChassis::GetWheelTraction called from 719591 - EngineRacer::DoThrottle
+	// IChassis::GetNumWheelsOnGround called from 72DA0C
+	// IChassis::GetWheelAngularVelocity called from 700270
+	// IChassis::GetWheelAngularVelocity called from 700283
+	// IChassis::GetWheelAngularVelocity called from 700316
+	// IChassis::GetWheelAngularVelocity called from 700329
+	// IChassis::GetWheelIdealTorque called from 70176F
+	// IChassis::GetWheelIdealTorque called from 701785
+	// IChassis::GetWheelBrakeTorque called from 7017A6
+	// IChassis::GetWheelBrakeTorque called from 7017C1
+	// IChassis::GetWheelIdealTorque called from 7017F6
+	// IChassis::GetWheelIdealTorque called from 70180C
+	// IChassis::GetWheelBrakeTorque called from 70182B
+	// IChassis::GetWheelBrakeTorque called from 701846
+	// IChassis::SetWheelMaximumTorqueRatio called from 72DD70
+	// IChassis::SetWheelMaximumTorqueRatio called from 72DD89
+	// IChassis::SetWheelMaximumTorqueRatio called from 72DDA3
+	// IChassis::SetWheelMaximumTorqueRatio called from 72DDBD
+	// IChassis::IsCounterSteering called from 72DEC3
+	// IChassis::GetWheelAngularVelocity called from 700270
+	// IChassis::GetWheelAngularVelocity called from 700283
+	// IChassis::GetWheelAngularVelocity called from 700316
+	// IChassis::GetWheelAngularVelocity called from 700329
+	// IChassis::GetWheelIdealTorque called from 70176F
+	// IChassis::GetWheelIdealTorque called from 701785
+	// IChassis::GetWheelBrakeTorque called from 7017A6
+	// IChassis::GetWheelBrakeTorque called from 7017C1
+	// IChassis::GetWheelIdealTorque called from 7017F6
+	// IChassis::GetWheelIdealTorque called from 70180C
+	// IChassis::GetWheelBrakeTorque called from 70182B
+	// IChassis::GetWheelBrakeTorque called from 701846
+	// IChassis::GetNumWheelsOnGround called from 7011CD
+	// IChassis::GetNumWheelsOnGround called from 7013AE
+	// IChassis::GetNumWheelsOnGround called from 72D6CE
+	// IChassis::GetWheelSlip called from 700425
+	// IChassis::GetWheelSlip called from 700438
+	// IChassis::GetWheelSlip called from 700471
+	// IChassis::GetWheelSlip called from 700484
+	// IChassis::GetWheelAngularVelocity called from 700270
+	// IChassis::GetWheelAngularVelocity called from 700283
+	// IChassis::GetWheelAngularVelocity called from 700316
+	// IChassis::GetWheelAngularVelocity called from 700329
+	// IChassis::IsWheelOnGround called from 70052A
+	// IChassis::GetWheelAngularVelocity called from 700555
+	// IChassis::GetWheelAngularVelocity called from 700568
+	// IChassis::SetWheelAngularVelocity called from 7005C7
+	// IChassis::SetWheelAngularVelocity called from 7005F0
+	// IChassis::IsWheelOnGround called from 700632
+	// IChassis::GetWheelAngularVelocity called from 70065D
+	// IChassis::GetWheelAngularVelocity called from 700670
+	// IChassis::SetWheelAngularVelocity called from 7006CF
+	// IChassis::SetWheelAngularVelocity called from 7006F8
+	// IChassis::GetNumWheels called from 700823
+	// IChassis::IsWheelOnGround called from 70083E
+	// IChassis::IsWheelOnGround called from 70083E
+	// IChassis::IsWheelOnGround called from 70083E
+	// IChassis::IsWheelOnGround called from 70083E
+	// IChassis::GetNumWheels called from 700902
+	// IChassis::SetWheelMaxAngularVelocity called from 70093D
+	// IChassis::SetWheelMaxAngularVelocity called from 70093D
+	// IChassis::SetWheelMaxAngularVelocity called from 70093D
+	// IChassis::SetWheelMaxAngularVelocity called from 70093D
+	// IChassis::GetNumWheelsOnGround called from 720AFF
+	// IChassis::GetWheelSlipRatio called from 730F13
+	// IChassis::GetWheelSlipRatio called from 730F22
+	// IChassis::GetWheelSlipRatio called from 730F35
+	// IChassis::GetWheelSlipRatio called from 730F48
+	// IChassis::GetWheelAngularVelocity called from 730F61
+	// IChassis::GetWheelAngularVelocity called from 730F70
+	// IChassis::GetWheelAngularVelocity called from 730F83
+	// IChassis::GetWheelAngularVelocity called from 730F96
+	// IChassis::GetNumWheelsOnGround called from 70AAD1
+	// IChassis::GetNumWheels called from 70AADC
+	// IChassis::GetNumWheels called from 7BA907
+	// IChassis::IsWheelOnGround called from 7BA940
+	// IChassis::GetWheelRoadSurface called from 7BA977
+	// IChassis::GetWheelSlip called from 7BA9AF
+	// IChassis::GetWheelSkid called from 7BA9BB
+	// IChassis::GetNumWheels called from 7BAA0F
+	// IChassis::IsWheelOnGround called from 7BA940
+	// IChassis::GetWheelRoadSurface called from 7BA977
+	// IChassis::GetWheelSlip called from 7BA9AF
+	// IChassis::GetWheelSkid called from 7BA9BB
+	// IChassis::GetNumWheels called from 7BAA0F
+	// IChassis::IsWheelOnGround called from 7BA940
+	// IChassis::GetWheelRoadSurface called from 7BA977
+	// IChassis::GetWheelSlip called from 7BA9AF
+	// IChassis::GetWheelSkid called from 7BA9BB
+	// IChassis::GetNumWheels called from 7BAA0F
+	// IChassis::IsWheelOnGround called from 7BA940
+	// IChassis::GetWheelRoadSurface called from 7BA977
+	// IChassis::GetWheelSlip called from 7BA9AF
+	// IChassis::GetWheelSkid called from 7BA9BB
+	// IChassis::GetNumWheels called from 7BAA0F
+	// IChassis::GetWheelieAngle called from 61944A
+	// IChassis::GetWheelLoad called from 619469
+	// IChassis::GetWheelLoad called from 61947C
+	// IChassis::GetWheelLoad called from 61948F
+	// IChassis::GetWheelLoad called from 6194A2
+	// IChassis::GetWheelSlipRatio called from 6194B5
+	// IChassis::GetWheelSlipRatio called from 6194C4
+	// IChassis::GetWheelSlipRatio called from 6194D3
+	// IChassis::GetWheelSlipRatio called from 6194E2
+	// IChassis::GetWheelSlipAngle called from 6194F1
+	// IChassis::GetWheelSlipAngle called from 619500
+	// IChassis::GetWheelSlipAngle called from 61950F
+	// IChassis::GetWheelSlipAngle called from 61951E
+	// IChassis::GetWheelSlip called from 61952D
+	// IChassis::GetWheelSlip called from 61953C
+	// IChassis::GetWheelSlip called from 61954B
+	// IChassis::GetWheelSlip called from 61955A
+	// IChassis::GetCompression called from 619569
+	// IChassis::GetCompression called from 619578
+	// IChassis::GetCompression called from 619587
+	// IChassis::GetCompression called from 619599
+	// IChassis::GetSuspensionDigression called from 6195AE
+	// IChassis::GetSuspensionDigression called from 6195C3
+	// IChassis::GetSuspensionDigression called from 6195D8
+	// IChassis::GetSuspensionDigression called from 6195ED
+	// IChassis::IsWheelOnGround called from 428EF9
+	// IChassis::IsWheelOnGround called from 428F0C
+	// IChassis::IsWheelOnGround called from 428F1F
+	// IChassis::IsWheelOnGround called from 428F32
+	// IChassis::GetWheelRoadSurface called from 428F45
+	// IChassis::GetWheelRoadSurface called from 428F66
+	// IChassis::GetWheelRoadSurface called from 428F84
+	// IChassis::GetWheelRoadSurface called from 428FA2
+	// IChassis::GetNumWheelsOnGround called from 6F0F0E
+
+
 	const char *__thiscall GetChassisName(uintptr_t ptr);
 	float __thiscall GetWheelTraction(uintptr_t ptr, unsigned int);
 	float __thiscall GetWheelSlipRatio(uintptr_t ptr, unsigned int);
@@ -89,7 +225,8 @@ namespace MWChassis {
 	float __thiscall GetWheelTraction(uintptr_t ptr, unsigned int index) {
 		ICHASSIS_FUNCTION_LOG("GetWheelTraction");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[index]->GetTraction();
+		//return pThis->mTires[index]->GetTraction();
+		return 1.0;
 	}
 	float __thiscall GetWheelSlipRatio(uintptr_t ptr, unsigned int index) { // todo this is weird
 		ICHASSIS_FUNCTION_LOG("GetWheelSlipRatio");
@@ -317,12 +454,19 @@ namespace MWChassis {
 	float __thiscall GetWheelTorqueRatio(uintptr_t ptr, unsigned int i) { // todo what is this
 		ICHASSIS_FUNCTION_LOG("GetWheelTorqueRatio");
 		auto pThis = GetSuspensionRacer(ptr);
-		return 1.0;
+		auto tire = pThis->mTires[i];
+		auto v70 = tire->mGripBoost;
+		if (v70 <= 1.0) v70 = 1.0;
+		float v63 = 1.0; // todo Curve::GetValueLinear((v19->mVehicleInfo->mLayoutPtr + 48 * v19->mAxleIndex + 0x1F0), (v21 * 2.23699)) Mu0[AxleIndex]
+		auto v69 = std::sqrt(((tire->mLongitudeForce * tire->mLongitudeForce) + (tire->mLateralForce * tire->mLateralForce)));
+		auto v72 = (v69 / (((((tire->mBrake + 1.0) * tire->mTractionBoost) * tire->mLoad) * v70) * v63));
+		return UMath::Clamp(v72, -3.0f, 3.0f);
 	}
 	float __thiscall GetWheelIdealTorque(uintptr_t ptr, unsigned int i) { // todo what is this
 		ICHASSIS_FUNCTION_LOG("GetWheelIdealTorque");
 		auto pThis = GetSuspensionRacer(ptr);
-		return 1.0;
+		auto tire = pThis->mTires[i];
+		return std::min(tire->GetTotalTorque() / tire->mRadius, 0.0f);
 	}
 	void __thiscall SetWheelRemoved(uintptr_t ptr, unsigned int i, bool b) { // todo
 		ICHASSIS_FUNCTION_LOG("SetWheelRemoved");
