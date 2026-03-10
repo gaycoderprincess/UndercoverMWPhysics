@@ -286,17 +286,23 @@ void DebugMenu() {
 	ChloeMenuLib::BeginMenu();
 
 	if (pSuspension) {
+		DrawMenuOption(std::format("state.inertia {:.2f} {:.2f} {:.2f}", LastChassisState.inertia.x, LastChassisState.inertia.y, LastChassisState.inertia.z));
+		DrawMenuOption(std::format("state.dimension {:.2f} {:.2f} {:.2f}", LastChassisState.dimension.x, LastChassisState.dimension.y, LastChassisState.dimension.z));
+		DrawMenuOption(std::format("state.cog {:.2f} {:.2f} {:.2f}", LastChassisState.cog.x, LastChassisState.cog.y, LastChassisState.cog.z));
+		DrawMenuOption(std::format("state.speed {:.2f}", LastChassisState.speed));
+		DrawMenuOption(std::format("state.slipangle {:.2f}", LastChassisState.slipangle));
+		DrawMenuOption(std::format("state.ground_effect {:.2f}", LastChassisState.ground_effect));
+		DrawMenuOption(std::format("state.time {:.2f}", LastChassisState.time));
+
 		//DrawMenuOption(std::format("state.flags - {}", LastChassisState.flags));
 		//DrawMenuOption(std::format("state.time - {}", LastChassisState.time));
 		//DrawMenuOption(std::format("state.mass - {}", LastChassisState.mass));
 		//DrawMenuOption(std::format("state.local_vel - {:.2f} {:.2f} {:.2f}", LastChassisState.local_vel.x, LastChassisState.local_vel.y, LastChassisState.local_vel.z));
 		//DrawMenuOption(std::format("state.linear_vel - {:.2f} {:.2f} {:.2f}", LastChassisState.linear_vel.x, LastChassisState.linear_vel.y, LastChassisState.linear_vel.z));
 		//DrawMenuOption(std::format("state.speed - {:.2f}", LastChassisState.speed));
-		DrawMenuOption(std::format("state.inertia - {:.2f} {:.2f} {:.2f}", LastChassisState.inertia.x, LastChassisState.inertia.y, LastChassisState.inertia.z));
 		DrawMenuOption(std::format("state.steer_input - {:.2f}", LastChassisState.steer_input));
 		DrawMenuOption(std::format("state.nos_boost - {:.2f}", LastChassisState.nos_boost));
 		DrawMenuOption(std::format("state.shift_boost - {:.2f}", LastChassisState.shift_boost));
-		DrawMenuOption(std::format("state.cog - {:.2f} {:.2f} {:.2f}", LastChassisState.cog.x, LastChassisState.cog.y, LastChassisState.cog.z));
 		DrawMenuOption(std::format("mDrift.State - {}", (int)pSuspension->mDrift.State));
 		DrawMenuOption(std::format("mDrift.Value - {:.2f}", pSuspension->mDrift.Value));
 		DrawMenuOption(std::format("mBurnOut.Traction - {:.2f}", pSuspension->mBurnOut.GetTraction()));

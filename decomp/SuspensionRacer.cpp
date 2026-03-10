@@ -1,5 +1,5 @@
 float GetSimTimeNew() {
-	return Sim::GetTime() / 1000.0;
+	return Sim::GetTime();
 }
 
 struct MWCarTuning {
@@ -1980,8 +1980,9 @@ bool MWWheel::UpdatePosition(const UMath::Vector3 &body_av, const UMath::Vector3
 	float prev = vehicle_height * 0.5f;
 	mWorldPos.SetTolerance(UMath::Min(tolerance, prev));
 
-	bool result = WWorldPos::Update(&mWorldPos, &mPosition, &mNormal, IsOnGround() && usecache, collider, true);
-	mNormal.w = ((mWorldPos.fPt0.x - mPosition.x) * mNormal.x) + (((mWorldPos.fPt0.z - mPosition.z) * mNormal.z) + ((mWorldPos.fPt0.y - mPosition.y) * mNormal.y));
+	bool result = WWorldPos::Update(&mWorldPos, &mPosition, &mNormal, IsOnGround() && usecache, collider, WWorldPos::kFail_KeepValid);
+	//mNormal.w = ((mWorldPos.fPt0.x - mPosition.x) * mNormal.x) + (((mWorldPos.fPt0.z - mPosition.z) * mNormal.z) + ((mWorldPos.fPt0.y - mPosition.y) * mNormal.y));
+	mNormal.w = -mWorldPos.fHeight;
 	UpdateSurface(mWorldPos.pSurface);
 	return result;
 }
