@@ -738,6 +738,11 @@ public:
 	void Create(const BehaviorParams& bp);
 	void DoJumpStabilizer(const State& bp);
 	void DoDriveForces(State &state);
+
+	const Physics::Tunings* GetVehicleTunings() {
+		return nullptr;
+		//return GetVehicle()->GetTunings();
+	}
 };
 
 #ifdef SUSPENSIONRACER_ELISE_TEST

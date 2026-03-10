@@ -91,9 +91,10 @@ namespace MWChassis {
 		auto pThis = GetSuspensionRacer(ptr);
 		return pThis->mTires[index]->GetTraction();
 	}
-	float __thiscall GetWheelSlipRatio(uintptr_t ptr, unsigned int index) {
+	float __thiscall GetWheelSlipRatio(uintptr_t ptr, unsigned int index) { // todo this is weird
 		ICHASSIS_FUNCTION_LOG("GetWheelSlipRatio");
 		auto pThis = GetSuspensionRacer(ptr);
+		if (pThis->mTires[index]->mRoadSpeed < 1.0f) return 0.0;
 		return pThis->mTires[index]->GetSlipAngle() / pThis->mTires[index]->GetToleratedSlip();
 	}
 	float __thiscall GetDragBoost(uintptr_t ptr) {
