@@ -430,6 +430,26 @@ std::vector<Attrib::Collection*> FindCollectionAndAllChildren(const char* classN
 	return out;
 }
 
+void __thiscall GetAttribHooked(Attrib::Instance* pThis, Attrib::Collection* collection, uint32_t msgPort) {
+	auto tmp = (uintptr_t)collection;
+	if (tmp && tmp < 0x1000) {
+		WriteLog(std::format("collection {:X} from {:X}", tmp, (uintptr_t)__builtin_return_address(0)));
+		collection = nullptr;
+	}
+
+	pThis->mCollection = collection;
+	pThis->mMsgPort = msgPort;
+	pThis->mLayoutPtr = nullptr;
+	pThis->mFlags = 0;
+	if (collection) {
+		if (!collection->mSource) {
+			pThis->mFlags = 1;
+		}
+		pThis->mLayoutPtr = collection->mLayout;
+		++collection->mTable.mRefCount;
+	}
+}
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 	switch( fdwReason ) {
 		case DLL_PROCESS_ATTACH: {
@@ -471,6 +491,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 
 			//NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x73F88D, 0x6DB670);
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73F830, &ChassisHumanConstructHooked);
+			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x462C80, &GetAttribHooked);
 
 			WriteLog("Mod initialized");
 		} break;

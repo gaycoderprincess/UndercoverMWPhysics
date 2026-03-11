@@ -12,7 +12,6 @@ public:
 	int pad;
 	UMath::Vector3 mVelocity;
 	int pad2;
-	SimSurface mSurface;
 	float mSurfaceStick;
 	UMath::Vector4 mIntegral;
 
@@ -43,7 +42,6 @@ public:
 		mForce.y = 0.0;
 		mForce.z = 0.0;
 		mWorldPos = WWorldPos();
-		Attrib::Instance::Change(&mSurface, SimSurface::kNull.mCollection);
 	}
 
 	void UpdateSurface(const Attrib::Collection* surface);
@@ -109,7 +107,9 @@ public:
 	}
 
 	const SimSurface *GetSurface() const {
-		return &mSurface;
+		static SimSurface tmp = {};
+		memset(&tmp,0,sizeof(tmp));
+		return &tmp;
 	}
 
 	const UMath::Vector3 &GetVelocity() const {

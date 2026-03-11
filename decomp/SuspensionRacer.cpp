@@ -1820,17 +1820,7 @@ void SuspensionRacer::OnTaskSimulate(float dT) {
 	//Chassis::OnTaskSimulate(dT);
 }
 
-void MWWheel::UpdateSurface(const Attrib::Collection* surface) {
-	if (mSurfaceStick > 0.0) {
-		if (surface == mSurface.mCollection) {
-			mSurfaceStick = mSurface.GetLayout()->STICK;
-		}
-	}
-	else {
-		Attrib::Instance::Change(&mSurface, surface);
-		mSurfaceStick = mSurface.GetLayout()->STICK;
-	}
-}
+void MWWheel::UpdateSurface(const Attrib::Collection* surface) {}
 
 bool MWWheel::InitPosition(ICollisionBody* cb, IRigidBody *rb, double maxcompression) {
 	//FUNCTION_LOG("Wheel::InitPosition");
