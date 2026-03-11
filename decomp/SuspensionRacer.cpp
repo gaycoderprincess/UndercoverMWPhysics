@@ -1284,7 +1284,7 @@ void SuspensionRacer::DoDrifting(const State &state) {
 			UMath::Vector3 moment;
 
 			UMath::Scale(state.GetUpVector(), (mDrift.Value * -ang_vel) * yaw_coef * state.inertia.y, moment);
-			mRB->ResolveTorque(&moment);
+			mRB->_ResolveTorque(&moment);
 		}
 
 		// detect counter steering
@@ -1776,7 +1776,7 @@ void SuspensionRacer::OnTaskSimulate(float dT) {
 	if (mGameBreaker > 0.0f) {
 		UMath::Vector3 extra_df;
 		UMath::Scale(state.GetUpVector(), Tweak_GameBreakerExtraGs * mGameBreaker * state.mass * 9.81f, extra_df);
-		mRB->ResolveForce(&extra_df);
+		mRB->_ResolveForce(&extra_df);
 	}
 
 	float max_slip = ComputeMaxSlip(state);
