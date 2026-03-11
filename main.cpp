@@ -495,6 +495,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 
 			// AIVehicle::GetOverSteerCorrection, disable road surface getter during race cutscenes
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x40AAC8, 0x40AB89);
+			NyaHookLib::Patch<uint16_t>(0x40AAC2, 0xE8D9); // fld1
 
 			WriteLog("Mod initialized");
 		} break;
