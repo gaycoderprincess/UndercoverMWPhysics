@@ -28,7 +28,6 @@ struct MWCarTuning {
 	TempTable AERO_CG;
 	TempTable AERO_COEFFICIENT;
 	float DRAG_COEFFICIENT;
-	//float FRONT_AXLE;
 	float FRONT_WEIGHT_BIAS;
 	float RENDER_MOTION;
 	AxlePair RIDE_HEIGHT;
@@ -41,9 +40,7 @@ struct MWCarTuning {
 	AxlePair SPRING_PROGRESSION;
 	AxlePair SPRING_STIFFNESS;
 	TempAxlePairTable SWAYBAR_STIFFNESS;
-	//AxlePair TRACK_WIDTH;
 	AxlePair TRAVEL;
-	//float WHEEL_BASE;
 
 	// brakes
 	AxlePair BRAKE_LOCK;
@@ -53,21 +50,13 @@ struct MWCarTuning {
 	// tires
 	AxlePair DYNAMIC_GRIP;
 	AxlePair GRIP_SCALE;
-	//AxlePair SECTION_WIDTH;
 	TempAxlePairTable STATIC_GRIP;
 	TempTable STEERING;
 	std::vector<float> YAW_CONTROL;
 	float YAW_SPEED;
 
 	// transmission
-	//float CLUTCH_SLIP;
 	float DIFFERENTIAL[3];
-	//float FINAL_GEAR;
-	//float GEAR_EFFICIENCY[9];
-	//float GEAR_RATIO[9];
-	//float OPTIMAL_SHIFT;
-	//float SHIFT_SPEED;
-	//float TORQUE_CONVERTER;
 	float TORQUE_SPLIT;
 
 	// pvehicle
@@ -101,7 +90,6 @@ MWCarTuning* LoadCarTuningFromFile(std::string configCarName) {
 	tmp.AERO_CG = config["chassis"]["AERO_CG"].value_or(50.0);
 	tmp.AERO_COEFFICIENT = config["chassis"]["AERO_COEFFICIENT"].value_or(0.0);
 	tmp.DRAG_COEFFICIENT = config["chassis"]["DRAG_COEFFICIENT"].value_or(0.0);
-	//tmp.FRONT_AXLE = config["chassis"]["FRONT_AXLE"].value_or(1.0);
 	tmp.FRONT_WEIGHT_BIAS = config["chassis"]["FRONT_WEIGHT_BIAS"].value_or(50.0);
 	tmp.RENDER_MOTION = config["chassis"]["RENDER_MOTION"].value_or(1.0);
 	tmp.RIDE_HEIGHT.Front = config["chassis"]["RIDE_HEIGHT"][0].value_or(10.0);
@@ -122,19 +110,14 @@ MWCarTuning* LoadCarTuningFromFile(std::string configCarName) {
 	tmp.SPRING_STIFFNESS.Rear = config["chassis"]["SPRING_STIFFNESS"][1].value_or(0.0);
 	tmp.SWAYBAR_STIFFNESS.Front = config["chassis"]["SWAYBAR_STIFFNESS"][0].value_or(0.0);
 	tmp.SWAYBAR_STIFFNESS.Rear = config["chassis"]["SWAYBAR_STIFFNESS"][1].value_or(0.0);
-	//tmp.TRACK_WIDTH.Front = config["chassis"]["TRACK_WIDTH"][0].value_or(1.0);
-	//tmp.TRACK_WIDTH.Rear = config["chassis"]["TRACK_WIDTH"][1].value_or(1.0);
 	tmp.TRAVEL.Front = config["chassis"]["TRAVEL"][0].value_or(5.0);
 	tmp.TRAVEL.Rear = config["chassis"]["TRAVEL"][1].value_or(5.0);
-	//tmp.WHEEL_BASE = config["chassis"]["WHEEL_BASE"].value_or(2.0);
 
 	// tires
 	tmp.DYNAMIC_GRIP.Front = config["tires"]["DYNAMIC_GRIP"][0].value_or(1.0);
 	tmp.DYNAMIC_GRIP.Rear = config["tires"]["DYNAMIC_GRIP"][1].value_or(1.0);
 	tmp.GRIP_SCALE.Front = config["tires"]["GRIP_SCALE"][0].value_or(1.0);
 	tmp.GRIP_SCALE.Rear = config["tires"]["GRIP_SCALE"][1].value_or(1.0);
-	//tmp.SECTION_WIDTH.Front = config["tires"]["SECTION_WIDTH"][0].value_or(1.0);
-	//tmp.SECTION_WIDTH.Rear = config["tires"]["SECTION_WIDTH"][1].value_or(1.0);
 	tmp.STATIC_GRIP.Front = config["tires"]["STATIC_GRIP"][0].value_or(2.0);
 	tmp.STATIC_GRIP.Rear = config["tires"]["STATIC_GRIP"][1].value_or(2.0);
 	tmp.STEERING = config["tires"]["STEERING"].value_or(1.0);

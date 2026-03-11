@@ -674,9 +674,7 @@ void SuspensionRacer::SetCOG(float extra_bias, float extra_ride) {
 	UMath::Vector3 dim;
 	irb->GetDimension(&dim);
 
-	//float fwbias = (GetMWCarData(this)->FRONT_WEIGHT_BIAS + extra_bias) * 0.01f; // todo is there no equivalent for this?
-	//float fwbias = (*(float*)Attrib::Instance::GetAttributePointer(&mCarInfo, Attrib::StringHash32("FRONT_WEIGHT_BIAS"), 0) + extra_bias) * 0.01f;
-	float fwbias = (50 + extra_bias) * 0.01f;
+	float fwbias = (GetMWCarData(this)->FRONT_WEIGHT_BIAS + extra_bias) * 0.01f; // todo is there no equivalent for this?
 	if (mNumWheelsOnGround == 0) {
 		fwbias = 0.5f;
 	}
