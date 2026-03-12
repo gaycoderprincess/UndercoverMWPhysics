@@ -404,7 +404,7 @@ public:
 	float mJumpTime;
 	float mJumpAlititude;
 	float mTireHeat;
-	MWCarTuning mMWInfo;
+	MWCarTuning* mMWInfo;
 	Attrib::Gen::car_tuning mCarInfo;
 	IEngine *mEngine;
 	IEngineDamage *mEngineDamage;
@@ -486,11 +486,11 @@ public:
 	}
 
 	bool RearWheelDrive() {
-		return mMWInfo.TORQUE_SPLIT < 1.0f;
+		return mMWInfo->TORQUE_SPLIT < 1.0f;
 	}
 
 	bool FrontWheelDrive() {
-		return mMWInfo.TORQUE_SPLIT > 0.0f;
+		return mMWInfo->TORQUE_SPLIT > 0.0f;
 	}
 
 	bool IsDriveWheel(unsigned int i) {

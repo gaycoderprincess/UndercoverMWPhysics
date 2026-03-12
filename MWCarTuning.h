@@ -224,6 +224,8 @@ MWCarTuning GetLerpedCarTuning(const std::string& model, float brake, float driv
 		__debugbreak();
 	}
 
+	WriteLog(std::format("GetLerpedCarTuning {} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}", model, brake, drivetrain, engine, induction, nitro, suspension, tire));
+
 	auto tmp = *base;
 
 	brake = UMath::Clamp(brake, 0.0, 1.0);

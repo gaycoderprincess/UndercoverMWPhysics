@@ -349,7 +349,7 @@ void DebugMenu() {
 			DrawMenuOption(std::format("IsGearChanging {}", pEngine->IsGearChanging()));
 			DrawMenuOption(std::format("mEngineBraking {}", pEngine->mEngineBraking));
 			DrawMenuOption(std::format("IDLE {:.2f}", pEngine->mCarInfo.GetLayout()->IDLE));
-			DrawMenuOption(std::format("TORQUE.size() {}", pEngine->mMWInfo.TORQUE.size()));
+			DrawMenuOption(std::format("TORQUE.size() {}", pEngine->mMWInfo->TORQUE.size()));
 			DrawMenuOption(std::format("mSuspension {:X}", (uintptr_t)pEngine->mSuspension));
 			DrawMenuOption(std::format("mIInput {:X}", (uintptr_t)pEngine->mIInput));
 			DrawMenuOption(std::format("GetControlGas {}", pEngine->mIInput->GetControlGas()));

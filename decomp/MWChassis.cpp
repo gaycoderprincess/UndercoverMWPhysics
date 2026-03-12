@@ -251,7 +251,7 @@ namespace MWChassis {
 	float __thiscall GetSuspensionMaxTravel(uintptr_t ptr, unsigned int i) { // todo is this correct
 		ICHASSIS_FUNCTION_LOG("GetSuspensionMaxTravel");
 		auto pThis = GetSuspensionRacer(ptr);
-		return INCH2METERS(pThis->mMWInfo.TRAVEL.At(IsRear(i)));
+		return INCH2METERS(pThis->mMWInfo->TRAVEL.At(IsRear(i)));
 	}
 	float __thiscall GetCompression(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetCompression");
@@ -264,7 +264,7 @@ namespace MWChassis {
 		float compression = 0.0f;
 		if (downforce < 0.0f) {
 			unsigned int axle = id / 2;
-			float spring_weight = LBIN2NM(pThis->mMWInfo.SPRING_STIFFNESS.At(axle));
+			float spring_weight = LBIN2NM(pThis->mMWInfo->SPRING_STIFFNESS.At(axle));
 			downforce *= 0.25f;
 			compression = -downforce / spring_weight;
 		}
@@ -352,7 +352,7 @@ namespace MWChassis {
 	float __thiscall GetSuspensionDigression(uintptr_t ptr, unsigned int i) { // todo is this correct
 		ICHASSIS_FUNCTION_LOG("GetSuspensionDigression");
 		auto pThis = GetSuspensionRacer(ptr);
-		return 1.0f - pThis->mMWInfo.SHOCK_DIGRESSION.At(IsRear(i));
+		return 1.0f - pThis->mMWInfo->SHOCK_DIGRESSION.At(IsRear(i));
 	}
 	float __thiscall GetWheelLateralForce(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelLateralForce");
@@ -392,7 +392,7 @@ namespace MWChassis {
 	float __thiscall GetRenderMotion(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetRenderMotion");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mMWInfo.RENDER_MOTION;
+		return pThis->mMWInfo->RENDER_MOTION;
 	}
 	ISteeringWheel::SteeringType __thiscall GetSteeringType(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetSteeringType");
@@ -463,12 +463,12 @@ namespace MWChassis {
 	float __thiscall GetDragCoefficient(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDragCoefficient");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mMWInfo.DRAG_COEFFICIENT;
+		return pThis->mMWInfo->DRAG_COEFFICIENT;
 	}
 	float __thiscall GetDownCoefficient(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDownCoefficient");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mMWInfo.AERO_COEFFICIENT;
+		return pThis->mMWInfo->AERO_COEFFICIENT;
 	}
 	float __thiscall GetStaticGripForSpeed(uintptr_t ptr, float f) { // todo
 		ICHASSIS_FUNCTION_LOG("GetStaticGripForSpeed");

@@ -426,8 +426,8 @@ class EngineRacer : public VehicleBehavior {
 			range = 0.0f;
 			return 0.0f;
 		} else {
-			range = (mMWInfo.RED_LINE - mMWInfo.IDLE) * 0.25f;
-			float upper_limit = mMWInfo.RED_LINE + 500.0f;
+			range = (mMWInfo->RED_LINE - mMWInfo->IDLE) * 0.25f;
+			float upper_limit = mMWInfo->RED_LINE + 500.0f;
 			return UMath::Min(mPeakTorqueRPM + range, upper_limit) - range;
 		}
 	}
@@ -437,22 +437,22 @@ class EngineRacer : public VehicleBehavior {
 		return mMaxHP;
 	}
 	Hp GetMinHorsePower() const {
-		return FTLB2HP(Physics::Info::Torque(&mMWInfo, mCarInfo, mMWInfo.IDLE) * mMWInfo.IDLE, 1.0f);
+		return FTLB2HP(Physics::Info::Torque(mMWInfo, mCarInfo, mMWInfo->IDLE) * mMWInfo->IDLE, 1.0f);
 	}
 	float GetRPM() const {
 		return mRPM;
 	}
 	float GetMaxRPM() const {
-		return mMWInfo.MAX_RPM;
+		return mMWInfo->MAX_RPM;
 	}
 	float GetPeakTorqueRPM() const {
 		return mPeakTorqueRPM;
 	}
 	float GetRedline() const {
-		return mMWInfo.RED_LINE;
+		return mMWInfo->RED_LINE;
 	}
 	float GetMinRPM() const {
-		return mMWInfo.IDLE;
+		return mMWInfo->IDLE;
 	}
 	float GetNOSCapacity() const {
 		return mNOSCapacity;
@@ -464,10 +464,10 @@ class EngineRacer : public VehicleBehavior {
 		return mNOSEngaged >= 1.0f;
 	}
 	bool HasNOS() const {
-		return mMWInfo.NOS_CAPACITY > 0.0f && mMWInfo.TORQUE_BOOST > 0.0f;
+		return mMWInfo->NOS_CAPACITY > 0.0f && mMWInfo->TORQUE_BOOST > 0.0f;
 	}
 	float GetNOSFlowRate() const {
-		return mMWInfo.FLOW_RATE;
+		return mMWInfo->FLOW_RATE;
 	}
 
 	void ChargeNOS(float charge) {
@@ -488,7 +488,7 @@ class EngineRacer : public VehicleBehavior {
 
 	// IInductable
 	Physics::Info::eInductionType InductionType() const {
-		return Physics::Info::InductionType(&mMWInfo, mCarInfo);
+		return Physics::Info::InductionType(mMWInfo, mCarInfo);
 	}
 	float GetInductionPSI() const {
 		return mPSI;
@@ -497,7 +497,7 @@ class EngineRacer : public VehicleBehavior {
 		return mSpool;
 	}
 	float GetMaxInductionPSI() const {
-		return mMWInfo.PSI;
+		return mMWInfo->PSI;
 	}
 
 	// IEngineDamage
@@ -550,24 +550,24 @@ class EngineRacer : public VehicleBehavior {
 
 	// Inlines
 	unsigned int GetNumGearRatios() const {
-		return mMWInfo.GEAR_RATIO.size();
+		return mMWInfo->GEAR_RATIO.size();
 	}
 
 	float GetGearRatio(unsigned int idx) const {
-		return mMWInfo.GEAR_RATIO[idx];
+		return mMWInfo->GEAR_RATIO[idx];
 	}
 
 	float GetGearEfficiency(unsigned int idx) const {
-		return mMWInfo.GEAR_EFFICIENCY[idx];
+		return mMWInfo->GEAR_EFFICIENCY[idx];
 	}
 
 	float GetFinalGear() const {
-		return mMWInfo.FINAL_GEAR;
+		return mMWInfo->FINAL_GEAR;
 	}
 
 	float GetRatioChange(unsigned int from, unsigned int to) const {
-		float ratio1 = mMWInfo.GEAR_RATIO[from];
-		float ratio2 = mMWInfo.GEAR_RATIO[to];
+		float ratio1 = mMWInfo->GEAR_RATIO[from];
+		float ratio2 = mMWInfo->GEAR_RATIO[to];
 
 		if (ratio1 > 0.0f && ratio2 > FLOAT_EPSILON) {
 			return ratio1 / ratio2;
@@ -577,15 +577,15 @@ class EngineRacer : public VehicleBehavior {
 	}
 
 	float GetShiftDelay(unsigned int gear) const {
-		return mMWInfo.SHIFT_SPEED * GetGearRatio(gear);
+		return mMWInfo->SHIFT_SPEED * GetGearRatio(gear);
 	}
 
 	bool RearWheelDrive() const {
-		return mMWInfo.TORQUE_SPLIT < 1.0f;
+		return mMWInfo->TORQUE_SPLIT < 1.0f;
 	}
 
 	bool FrontWheelDrive() const {
-		return mMWInfo.TORQUE_SPLIT > 0.0f;
+		return mMWInfo->TORQUE_SPLIT > 0.0f;
 	}
 
 	float GetShiftUpRPM(int gear) const {
@@ -619,7 +619,7 @@ class EngineRacer : public VehicleBehavior {
 	float mSportShifting;
 	IInput *mIInput;
 	IChassis *mSuspension;
-	MWCarTuning mMWInfo;
+	MWCarTuning* mMWInfo;
 	Attrib::Gen::car_tuning mCarInfo;
 	float mRPM;
 	ShiftStatus mShiftStatus;

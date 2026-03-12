@@ -84,7 +84,7 @@ namespace MWTransmission {
 	float __thiscall GetTorqueSplit(uintptr_t ptr) {
 		ITRANSMISSION_FUNCTION_LOG("GetTorqueSplit");
 		auto pThis = GetEngineRacer(ptr);
-		return pThis->mMWInfo.TORQUE_SPLIT;
+		return pThis->mMWInfo->TORQUE_SPLIT;
 	}
 	float __thiscall GetTotalShiftTime(uintptr_t ptr) {
 		ITRANSMISSION_FUNCTION_LOG("GetTotalShiftTime");

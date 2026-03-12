@@ -1,7 +1,7 @@
 namespace Physics {
 	namespace Info {
 		float AerodynamicDownforce(const SuspensionRacer* pThis, const float speed) {
-			return speed * 2 * pThis->mMWInfo.AERO_COEFFICIENT * 1000.0f;
+			return speed * 2 * pThis->mMWInfo->AERO_COEFFICIENT * 1000.0f;
 		}
 	}
 }
@@ -407,7 +407,7 @@ void SuspensionRacer::CreateTires() {
 		delete mTires[i];
 		bool is_front = IsFront(i);
 		float diameter = Physics::Info::WheelDiameter(mCarInfo, is_front);
-		mTires[i] = new Tire(diameter * 0.5f, i, &mCarInfo, &mMWInfo, mVehicle);
+		mTires[i] = new Tire(diameter * 0.5f, i, &mCarInfo, mMWInfo, mVehicle);
 	}
 	UMath::Vector3 dimension;
 	GetOwner()->GetRigidBody()->GetDimension(&dimension);
@@ -483,7 +483,9 @@ void SuspensionRacer::Create(const BehaviorParams& bp) {
 	mTireHeat = 0.0f;
 
 	ctor_cartuning(&mCarInfo, cartuning_LookupKey(&mCarInfo, GetOwner(), 0));
-	mMWInfo = GetLerpedCarTuning(GetVehicle()->GetVehicleName(), GetVehicle()->GetCustomizations());
+	
+	mMWInfo = new MWCarTuning;
+	*mMWInfo = GetLerpedCarTuning(GetVehicle()->GetVehicleName(), GetVehicle()->GetCustomizations());
 
 	mRB = nullptr;
 	mCollisionBody = nullptr;
@@ -667,13 +669,13 @@ void SuspensionRacer::SetCOG(float extra_bias, float extra_ride) {
 	UMath::Vector3 dim;
 	irb->GetDimension(&dim);
 
-	float fwbias = (mMWInfo.FRONT_WEIGHT_BIAS + extra_bias) * 0.01f; // todo is there no equivalent for this?
+	float fwbias = (mMWInfo->FRONT_WEIGHT_BIAS + extra_bias) * 0.01f; // todo is there no equivalent for this?
 	if (mNumWheelsOnGround == 0) {
 		fwbias = 0.5f;
 	}
 	float cg_z = (front_z - rear_z) * fwbias + rear_z;
-	float cg_y = INCH2METERS(mMWInfo.ROLL_CENTER) - (dim.y + UMath::Max(INCH2METERS(mMWInfo.RIDE_HEIGHT.At(0) + extra_ride),
-																			  INCH2METERS(mMWInfo.RIDE_HEIGHT.At(1) + extra_ride)));
+	float cg_y = INCH2METERS(mMWInfo->ROLL_CENTER) - (dim.y + UMath::Max(INCH2METERS(mMWInfo->RIDE_HEIGHT.At(0) + extra_ride),
+																			  INCH2METERS(mMWInfo->RIDE_HEIGHT.At(1) + extra_ride)));
 	UMath::Vector3 cog{0.0f, cg_y, cg_z};
 	mRB->SetCenterOfGravity(&cog);
 	mRB->OverrideCOG(&cog);
@@ -710,7 +712,7 @@ void SuspensionRacer::DoAerodynamics(const State &state, float drag_pct, float a
 	IRigidBody *irb = this->GetOwner()->GetRigidBody();
 
 	if (drag_pct > 0.0f) {
-		const float dragcoef_spec = mMWInfo.DRAG_COEFFICIENT;
+		const float dragcoef_spec = mMWInfo->DRAG_COEFFICIENT;
 		// drag increases relative to the car's speed
 		// letting off the throttle will increase drag by OffThrottleDragFactor
 		float drag = state.speed * drag_pct * dragcoef_spec;
@@ -759,7 +761,7 @@ void SuspensionRacer::DoAerodynamics(const State &state, float drag_pct, float a
 			UMath::Vector3 aero_center{state.cog.x, state.cog.y, state.cog.z};
 			// when at least 1 wheel is grounded, change the downforce forward position using the aero CG and axle positions
 			if (state.ground_effect != 0.0f) {
-				aero_center.z = (aero_front_z - aero_rear_z) * (mMWInfo.AERO_CG * 0.01f) + aero_rear_z;
+				aero_center.z = (aero_front_z - aero_rear_z) * (mMWInfo->AERO_CG * 0.01f) + aero_rear_z;
 			}
 
 			if (Tweak_PlaneDynamics != 0.0f) {
@@ -811,16 +813,16 @@ void SuspensionRacer::DoDriveForces(State &state) {
 		return;
 	}
 
-	center_diff.factor = mMWInfo.DIFFERENTIAL[2];
+	center_diff.factor = mMWInfo->DIFFERENTIAL[2];
 	if (center_diff.factor > 0.0f) {
-		center_diff.bias = mMWInfo.TORQUE_SPLIT;
+		center_diff.bias = mMWInfo->TORQUE_SPLIT;
 		center_diff.angular_vel[0] = mTires[0]->GetAngularVelocity() + mTires[1]->GetAngularVelocity();
 		center_diff.angular_vel[1] = mTires[2]->GetAngularVelocity() + mTires[3]->GetAngularVelocity();
 		center_diff.has_traction[0] = mTires[0]->IsOnGround() || mTires[1]->IsOnGround();
 		center_diff.has_traction[1] = mTires[2]->IsOnGround() || mTires[3]->IsOnGround();
 		center_diff.CalcSplit(false);
 	} else {
-		center_diff.torque_split[0] = mMWInfo.TORQUE_SPLIT;
+		center_diff.torque_split[0] = mMWInfo->TORQUE_SPLIT;
 		center_diff.torque_split[1] = 1.0f - center_diff.torque_split[0];
 	}
 
@@ -835,7 +837,7 @@ void SuspensionRacer::DoDriveForces(State &state) {
 
 			float traction_control[2] = {1.0f, 1.0f};
 			float traction_boost[2] = {1.0f, 1.0f};
-			diff.factor = mMWInfo.DIFFERENTIAL[axle];
+			diff.factor = mMWInfo->DIFFERENTIAL[axle];
 
 			for (unsigned int i = 0; i < 2; ++i) {
 				unsigned int tire = axle * 2 + i;
@@ -981,7 +983,7 @@ void SuspensionRacer::ComputeAckerman(const float steering, const State &state, 
 float SuspensionRacer::DoAISteering(State &state) {
 	mSteering.Maximum = 45.0f;
 	if (state.driver_style != STYLE_DRAG) {
-		mSteering.Maximum = mMWInfo.STEERING * 45.0f;
+		mSteering.Maximum = mMWInfo->STEERING * 45.0f;
 	}
 
 	return DEG2ANGLE(mSteering.Maximum * state.steer_input);
@@ -1066,7 +1068,7 @@ float SuspensionRacer::DoHumanSteering(State &state) {
 		steer -= 360.0f;
 	}
 
-	float steering_coeff = mMWInfo.STEERING;
+	float steering_coeff = mMWInfo->STEERING;
 	ISteeringWheel::SteeringType steer_type = ISteeringWheel::kGamePad;
 
 	IPlayer *player = GetOwner()->GetPlayer();
@@ -1137,14 +1139,14 @@ float SuspensionRacer::CalcYawControlLimit(float speed) const {
 
 		// todo!! these are different in uc!
 #ifdef SUSPENSIONRACER_ELISE_TEST
-		unsigned int numunits = mMWInfo.YAW_CONTROL.size();
+		unsigned int numunits = mMWInfo->YAW_CONTROL.size();
 		if (numunits > 1) {
 			float ratio = (numunits - 1) * percent;
 			unsigned int index1 = static_cast<unsigned int>(ratio);
 			ratio -= index1;
 			unsigned int index2 = UMath::Min(numunits - 1, index1 + 1);
-			float a = mMWInfo.YAW_CONTROL[index1];
-			float b = mMWInfo.YAW_CONTROL[index2];
+			float a = mMWInfo->YAW_CONTROL[index1];
+			float b = mMWInfo->YAW_CONTROL[index2];
 			return a + (b - a) * ratio;
 		}
 #else
@@ -1469,15 +1471,15 @@ void SuspensionRacer::DoWheelForces(State &state) {
 	float progression[2];
 
 	for (unsigned int i = 0; i < 2; ++i) {
-		shock_specs[i] = LBIN2NM(mMWInfo.SHOCK_STIFFNESS.At(i));
-		shock_ext_specs[i] = LBIN2NM(mMWInfo.SHOCK_EXT_STIFFNESS.At(i));
-		shock_valving[i] = INCH2METERS(mMWInfo.SHOCK_VALVING.At(i));
-		shock_digression[i] = 1.0f - mMWInfo.SHOCK_DIGRESSION.At(i);
-		spring_specs[i] = LBIN2NM(mMWInfo.SPRING_STIFFNESS.At(i));
-		sway_specs[i] = LBIN2NM(mMWInfo.SWAYBAR_STIFFNESS.At(i));
-		travel_specs[i] = INCH2METERS(mMWInfo.TRAVEL.At(i));
-		rideheight_specs[i] = INCH2METERS(mMWInfo.RIDE_HEIGHT.At(i) + ride_extra);
-		progression[i] = mMWInfo.SPRING_PROGRESSION.At(i);
+		shock_specs[i] = LBIN2NM(mMWInfo->SHOCK_STIFFNESS.At(i));
+		shock_ext_specs[i] = LBIN2NM(mMWInfo->SHOCK_EXT_STIFFNESS.At(i));
+		shock_valving[i] = INCH2METERS(mMWInfo->SHOCK_VALVING.At(i));
+		shock_digression[i] = 1.0f - mMWInfo->SHOCK_DIGRESSION.At(i);
+		spring_specs[i] = LBIN2NM(mMWInfo->SPRING_STIFFNESS.At(i));
+		sway_specs[i] = LBIN2NM(mMWInfo->SWAYBAR_STIFFNESS.At(i));
+		travel_specs[i] = INCH2METERS(mMWInfo->TRAVEL.At(i));
+		rideheight_specs[i] = INCH2METERS(mMWInfo->RIDE_HEIGHT.At(i) + ride_extra);
+		progression[i] = mMWInfo->SPRING_PROGRESSION.At(i);
 	}
 
 	float sway_stiffness[4];
@@ -1542,7 +1544,7 @@ void SuspensionRacer::DoWheelForces(State &state) {
 
 			float damp = rise > 0.0f ? rise * shock_specs[axle] : rise * shock_ext_specs[axle];
 
-			if (damp > mMWInfo.SHOCK_BLOWOUT * 9.81f * mass) {
+			if (damp > mMWInfo->SHOCK_BLOWOUT * 9.81f * mass) {
 				damp = 0.0f;
 			}
 
@@ -1622,7 +1624,7 @@ void SuspensionRacer::DoWheelForces(State &state) {
 
 		float yaw = UMath::Dot((UMath::Vector3)state.matrix.y, total_torque);
 #ifdef SUSPENSIONRACER_ELISE_TEST
-		float counter_yaw = yaw * mMWInfo.YAW_SPEED;
+		float counter_yaw = yaw * mMWInfo->YAW_SPEED;
 #else
 		float counter_yaw = yaw * *(float*)Attrib::Instance::GetAttributePointer(&mCarInfo, Attrib::StringHash32("YAW_SPEED"), 0);
 #endif
@@ -1850,7 +1852,7 @@ bool MWWheel::UpdatePosition(const UMath::Vector3 &body_av, const UMath::Vector3
 }
 
 Meters SuspensionRacer::GetRideHeight(unsigned int idx) const {
-	return INCH2METERS(mMWInfo.RIDE_HEIGHT.At(idx / 2));
+	return INCH2METERS(mMWInfo->RIDE_HEIGHT.At(idx / 2));
 }
 
 void SuspensionRacer::MatchSpeed(float speed) {
@@ -1863,6 +1865,8 @@ void SuspensionRacer::MatchSpeed(float speed) {
 
 void SuspensionRacer::dtor(char a2) {
 	FUNCTION_LOG("SuspensionRacer::dtor");
+
+	delete mMWInfo;
 
 	if (mCarInfo.mCollection) {
 		Attrib::Collection::Release(mCarInfo.mCollection, 0);
