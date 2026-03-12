@@ -11,7 +11,9 @@ SET(CMAKE_RC_COMPILER i686-w64-mingw32-windres)
 SET(CMAKE_RANLIB i686-w64-mingw32-ranlib)
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -flto -fno-use-linker-plugin -O3 -D_NDEBUG -DNDEBUG")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -O3 -D_NDEBUG -DNDEBUG")
+    # keep disabled for now... causes issues
+    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -fno-use-linker-plugin")
     if (NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s")
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-exclude-libs,ALL -Wl,--gc-sections -Wl,--strip-all")
