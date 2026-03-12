@@ -39,7 +39,7 @@ You should be able to build the project now in CLion.
 - Cadillac CTS-V - Cadillac CTS (Most Wanted)
 - Chevrolet Camaro Concept - Chevrolet Camaro Concept (Carbon)
 - Chevrolet Camaro SS - Chevrolet Camaro SS (Most Wanted)
-- Chevrolet Chevelle SS - Chevrolet Chevelle SS (Most Wanted)
+- Chevrolet Chevelle SS - Chevrolet Chevelle SS (Carbon)
 - Chevrolet Corvette Stingray - Chevrolet Corvette C6 (Most Wanted)
 - Chevrolet Corvette Z06 - Chevrolet Corvette C6.R (Most Wanted)
 - Chrysler 300C (Unused) - Chrysler 300C (Carbon)
