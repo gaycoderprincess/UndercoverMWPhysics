@@ -35,6 +35,12 @@ public:
 #define FUNCTION_LOG(name) WriteLog(std::format("{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)));
 //#define ICHASSIS_FUNCTION_LOG(name) WriteLog(std::format("IChassis::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
 #define ICHASSIS_FUNCTION_LOG(name) {}
+#define ITIPTRONIC_FUNCTION_LOG(name) WriteLog(std::format("ITiptronic::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
+#define IRACEENGINE_FUNCTION_LOG(name) WriteLog(std::format("IRaceEngine::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
+#define IENGINEDAMAGE_FUNCTION_LOG(name) WriteLog(std::format("IEngineDamage::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
+#define IINDUCTABLE_FUNCTION_LOG(name) WriteLog(std::format("IInductable::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
+#define ITRANSMISSION_FUNCTION_LOG(name) WriteLog(std::format("ITransmission::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
+#define IENGINE_FUNCTION_LOG(name) WriteLog(std::format("IEngine::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
 
 #include "decomp/ConversionUtil.hpp"
 
@@ -251,12 +257,20 @@ float Table::GetValue(float input) {
 
 std::vector<float> UNDERCOVER_YawControl = { 0.1, 0.2, 0.65, 1 };
 
+#define GET_FAKE_INTERFACE(base, type, var) { auto ptr = (uintptr_t)this; ptr += offsetof(base, var); return (type*)ptr; }
+
 #include "MWCarTuning.h"
 #include "decomp/AverageWindow.h"
 #include "decomp/EngineRacer.h"
 #include "decomp/SuspensionRacer.h"
 #include "MWCarTuning.cpp"
 #include "decomp/MWChassis.cpp"
+#include "decomp/MWRaceEngine.cpp"
+#include "decomp/MWTiptronic.cpp"
+#include "decomp/MWEngineDamage.cpp"
+#include "decomp/MWInductable.cpp"
+#include "decomp/MWTransmission.cpp"
+#include "decomp/MWEngine.cpp"
 #include "decomp/SuspensionRacer.cpp"
 #include "decomp/EngineRacer.cpp"
 
@@ -306,6 +320,7 @@ void QuickValueEditor(const char* name, float& value) {
 // tensor scale 1.2 1.6 1.2
 
 SuspensionRacer* pSuspension = nullptr;
+EngineRacer* pEngine = nullptr;
 void DebugMenu() {
 	ChloeMenuLib::BeginMenu();
 
@@ -390,11 +405,18 @@ void DebugMenu() {
 	ChloeMenuLib::EndMenu();
 }
 
-auto oldctor = (void*(__thiscall*)(void*, BehaviorParams*, SuspensionParams*))0x73CEA0;
 auto oldctorbase = (void*(__thiscall*)(void*, BehaviorParams*, int))0x6DB670;
 SuspensionRacer* ChassisHumanConstructHooked(BehaviorParams* bp) {
 	auto data = pSuspension = (SuspensionRacer*)gFastMem.Alloc(sizeof(SuspensionRacer), nullptr);
 	memset(data,0,sizeof(SuspensionRacer));
+	oldctorbase(data, bp, 0);
+	data->Create(*bp);
+	return data;
+}
+
+EngineRacer* EngineRacerConstructHooked(BehaviorParams* bp) {
+	auto data = pEngine = (EngineRacer*)gFastMem.Alloc(sizeof(EngineRacer), nullptr);
+	memset(data,0,sizeof(EngineRacer));
 	oldctorbase(data, bp, 0);
 	data->Create(*bp);
 	return data;
@@ -496,6 +518,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 
 			//NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x73F88D, 0x6DB670);
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73F830, &ChassisHumanConstructHooked);
+			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73EC60, &EngineRacerConstructHooked);
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x462C80, &GetAttribHooked);
 
 			// AIVehicle::GetOverSteerCorrection, disable road surface getter during race cutscenes

@@ -1,13 +1,80 @@
+void* NewEngineRacerVTable[] = {
+		(void*)0x69F570, // generic OnService
+		(void*)&EngineRacer::dtor,
+		(void*)&EngineRacer::Reset,
+		(void*)&EngineRacer::GetPriority,
+		(void*)&EngineRacer::OnOwnerAttached,
+		(void*)&EngineRacer::OnOwnerDetached,
+		(void*)&EngineRacer::OnTaskSimulate,
+		(void*)&EngineRacer::OnBehaviorChange,
+		(void*)&EngineRacer::OnPause,
+		(void*)&EngineRacer::OnUnPause,
+		(void*)&EngineRacer::IsEngineBraking,
+		(void*)&EngineRacer::IsShiftingGear,
+		(void*)&EngineRacer::OnGearChange,
+		(void*)&EngineRacer::UseRevLimiter,
+		(void*)&EngineRacer::DoECU,
+		(void*)&EngineRacer::DoThrottle,
+		nullptr, //(void*)&EngineRacer::DoClutch,
+		nullptr, //(void*)&EngineRacer::DoClutchTorque,
+		nullptr, //(void*)&EngineRacer::ModifyClutchTorque,
+		nullptr, //(void*)&EngineRacer::FinalizeClutchTorque,
+		nullptr, //(void*)&EngineRacer::DoSabotage,
+		(void*)&EngineRacer::DoNos,
+		(void*)&EngineRacer::DoShifting,
+		(void*)&EngineRacer::UpdateShiftPotential,
+		nullptr, //(void*)&EngineRacer::ComputeDriveTorques,
+		nullptr, //(void*)&EngineRacer::ComputeBrakingTorque,
+		(void*)&EngineRacer::GetEngineTorque,
+		(void*)&EngineRacer::GetBrakingTorque,
+		(void*)&EngineRacer::GetShiftDelay,
+		(void*)&EngineRacer::GetDifferentialAngularVelocity,
+		nullptr, //(void*)&EngineRacer::GetTireTorque,
+		(void*)&EngineRacer::GetDriveWheelSlippage,
+		(void*)&EngineRacer::SetDifferentialAngularVelocity,
+		(void*)&EngineRacer::LimitFreeWheels,
+		nullptr, //(void*)&EngineRacer::LimitWheelsAV,
+		(void*)&EngineRacer::AutoShift,
+		(void*)&EngineRacer::CalcSpeedometer,
+		(void*)&EngineRacer::GetShiftUpRPM,
+		(void*)&EngineRacer::GetShiftDownRPM,
+		(void*)&EngineRacer::CalcShiftPoints,
+		nullptr, //(void*)&EngineRacer::TransmissionAVFromGroundSpeed,
+		(void*)&EngineRacer::GuessGear,
+		(void*)&EngineRacer::GuessRPM,
+		(void*)&EngineRacer::DoGearChange,
+		(void*)&EngineRacer::FindShiftPotential,
+		nullptr, //(void*)&EngineRacer::ComputeIdealDriveTorque,
+		nullptr, //(void*)&EngineRacer::GetTargetTorqueRatioMultiplier,
+		nullptr, //(void*)&EngineRacer::CalcPerfectLaunchError,
+};
+
 void EngineRacer::Create(const BehaviorParams &bp) {
 	FUNCTION_LOG("EngineRacer::Create");
 
-	// todo
-	//*(uintptr_t*)this = (uintptr_t)&NewSuspensionRacerVTable;
-	//*(uintptr_t*)&tmpChassis = (uintptr_t)&NewChassisVTable;
-	//tmpChassis.mCOMObject = &bp.fowner->Object;
-	//bp.fowner->Object.Add(&tmpChassis);
+	*(uintptr_t*)this = (uintptr_t)&NewEngineRacerVTable;
+	*(uintptr_t*)&tmpEngine = (uintptr_t)&MWEngine::NewVTable;
+	*(uintptr_t*)&tmpTransmission = (uintptr_t)&MWTransmission::NewVTable;
+	*(uintptr_t*)&tmpInductable = (uintptr_t)&MWInductable::NewVTable;
+	*(uintptr_t*)&tmpTiptronic = (uintptr_t)&MWTiptronic::NewVTable;
+	*(uintptr_t*)&tmpRaceEngine = (uintptr_t)&MWRaceEngine::NewVTable;;
+	*(uintptr_t*)&tmpEngineDamage = (uintptr_t)&MWEngineDamage::NewVTable;
+
+	tmpEngine.mCOMObject = &bp.fowner->Object;
+	tmpTransmission.mCOMObject = &bp.fowner->Object;
+	tmpInductable.mCOMObject = &bp.fowner->Object;
+	tmpTiptronic.mCOMObject = &bp.fowner->Object;
+	tmpRaceEngine.mCOMObject = &bp.fowner->Object;
+	tmpEngineDamage.mCOMObject = &bp.fowner->Object;
+	bp.fowner->Object.Add(&tmpEngine);
+	bp.fowner->Object.Add(&tmpTransmission);
+	bp.fowner->Object.Add(&tmpInductable);
+	bp.fowner->Object.Add(&tmpTiptronic);
+	bp.fowner->Object.Add(&tmpRaceEngine);
+	bp.fowner->Object.Add(&tmpEngineDamage);
 
 	mDriveTorque = 0.0f;
+	mDriveTorqueAtEngine = 0.0f;
 	mGear = G_NEUTRAL;
 	mGearShiftTimer = 0.0f;
 	mThrottle = 0.0f;
@@ -34,11 +101,9 @@ void EngineRacer::Create(const BehaviorParams &bp) {
 	mShiftPotential = SHIFT_POTENTIAL_NONE;
 	mPeakTorque = 0.0f;
 	mPeakTorqueRPM = 0.0f;
-	mMaxHP = 0.0f;
 	mClutch = Clutch();
 	mBlown = false;
 	mSabotage = 0.0f;
-
 
 	GetOwner()->QueryInterface(&mIInput);
 	GetOwner()->QueryInterface(&mSuspension);
@@ -101,6 +166,7 @@ void EngineRacer::OnAttributeChange(const Attrib::Collection *collection, unsign
 
 void EngineRacer::Reset() {
 	mDriveTorque = 0.0f;
+	mDriveTorqueAtEngine = 0.0f;
 	mAngularVelocity = RPM2RPS(mCarInfo.GetLayout()->IDLE);
 	mAngularAcceleration = 0.0f;
 	mRPM = mCarInfo.GetLayout()->IDLE;
@@ -118,6 +184,7 @@ void EngineRacer::Reset() {
 	mThrottle = 0.0f;
 	mNOSBoost = 1.0f;
 	mSportShifting = 0.0f;
+	mTransmissionOverride = OVERRIDE_NONE;
 
 	CalcShiftPoints();
 }
@@ -326,6 +393,7 @@ ShiftStatus EngineRacer::OnGearChange(GearID gear) {
 		} else {
 			mGearShiftTimer = GetShiftDelay(gear);
 		}
+		mClutch.mShiftingUp = gear > mGear;
 		mGear = gear;
 		mClutch.Disengage();
 		return SHIFT_STATUS_NORMAL;
@@ -656,7 +724,11 @@ float EngineRacer::DoThrottle() {
 
 // Credits: Brawltendo
 void EngineRacer::DoShifting(float dT) {
-	if (mIInput && mIInput->IsAutomaticShift()) {
+	auto automatic = mIInput && mIInput->IsAutomaticShift();
+	if (mTransmissionOverride != OVERRIDE_NONE) {
+		automatic = mTransmissionOverride == OVERRIDE_AUTOMATIC;
+	}
+	if (automatic) {
 		AutoShift();
 	}
 
@@ -831,7 +903,7 @@ void EngineRacer::OnTaskSimulate(float dT) {
 			float wheel_response = 0.1f;
 			float response = 1.0f / engine_inertia;
 			float response1;
-			float torquesplit = 1.0f - mCarInfo.GetLayout()->TORQUE_SPLIT;
+			float torquesplit = 1.0f - GetMWCarData(this)->TORQUE_SPLIT;
 			if (FrontWheelDrive()) {
 				float front_gear = UMath::Abs(total_gear_ratio);
 				response += (1.0f - torquesplit) * wheel_response * front_gear * front_gear * 0.5f;
@@ -915,6 +987,7 @@ void EngineRacer::OnTaskSimulate(float dT) {
 	}
 
 	mDriveTorque = drive_torque * total_gear_ratio * GetGearEfficiency(mGear);
+	mDriveTorqueAtEngine = drive_torque;
 	mRPM = Engine_SmoothRPM(IsShiftingGear() || mClutch.GetState() == Clutch::DISENGAGED, GetGear(), dT, mRPM, RPS2RPM(mAngularVelocity),
 							engine_inertia);
 

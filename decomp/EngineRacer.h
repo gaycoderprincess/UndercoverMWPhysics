@@ -303,6 +303,7 @@ class EngineRacer : public VehicleBehavior {
 			mState = ENGAGED;
 			mTime = 0.0f;
 			mEngageTime = 0.0f;
+			mShiftingUp = false;
 		}
 
 		void Disengage() {
@@ -326,6 +327,7 @@ class EngineRacer : public VehicleBehavior {
 		void Reset() {
 			mState = ENGAGED;
 			mTime = 0.0f;
+			mShiftingUp = false;
 		}
 
 		float Update(float dT) {
@@ -355,6 +357,7 @@ class EngineRacer : public VehicleBehavior {
 		State mState;
 		float mTime;
 		float mEngageTime;
+		bool mShiftingUp;
 	};
 
 	ISimable* GetOwner() const {
@@ -378,6 +381,12 @@ class EngineRacer : public VehicleBehavior {
 	void CalcShiftPoints();
 	bool DoGearChange(GearID gear, bool automatic);
 	void AutoShift();
+
+	void OnOwnerAttached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerAttached"); }
+	void OnOwnerDetached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerDetached"); }
+	void OnPause() { FUNCTION_LOG("OnPause");  }
+	void OnUnPause() { FUNCTION_LOG("OnUnPause");  }
+	int GetPriority() { FUNCTION_LOG("GetPriority"); return mPriority; }
 
 	void dtor(char a2);
 
@@ -568,11 +577,11 @@ class EngineRacer : public VehicleBehavior {
 	}
 
 	bool RearWheelDrive() const {
-		return mCarInfo.GetLayout()->TORQUE_SPLIT < 1.0f;
+		return GetMWCarData(this)->TORQUE_SPLIT < 1.0f;
 	}
 
 	bool FrontWheelDrive() const {
-		return mCarInfo.GetLayout()->TORQUE_SPLIT > 0.0f;
+		return GetMWCarData(this)->TORQUE_SPLIT > 0.0f;
 	}
 
 	float GetShiftUpRPM(int gear) const {
@@ -585,35 +594,50 @@ class EngineRacer : public VehicleBehavior {
 
 	float GetCatchupCheat() const { return 0.0; }
 
-  private:
-	float mDriveTorque;									  // offset 0x84, size 0x4
-	int mGear;											   // offset 0x88, size 0x4
-	float mGearShiftTimer;								   // offset 0x8C, size 0x4
-	float mThrottle;										 // offset 0x90, size 0x4
-	float mSpool;											// offset 0x94, size 0x4
-	float mPSI;											  // offset 0x98, size 0x4
-	float mInductionBoost;								   // offset 0x9C, size 0x4
-	float mShiftUpRPM[10];								   // offset 0xA0, size 0x28
-	float mShiftDownRPM[10];								 // offset 0xC8, size 0x28
-	float mAngularVelocity;								  // offset 0xF0, size 0x4
-	float mAngularAcceleration;							  // offset 0xF4, size 0x4
-	float mTransmissionVelocity;							 // offset 0xF8, size 0x4
-	float mNOSCapacity;									  // offset 0xFC, size 0x4
-	float mNOSBoost;										 // offset 0x100, size 0x4
-	float mNOSEngaged;									   // offset 0x104, size 0x4
-	float mClutchRPMDiff;									// offset 0x108, size 0x4
-	bool mEngineBraking;									 // offset 0x10C, size 0x1
-	float mSportShifting;									// offset 0x110, size 0x4
-	IInput *mIInput;										 // offset 0x114, size 0x4
-	IChassis *mSuspension;								// offset 0x118, size 0x4
+	float mDriveTorque;
+	float mDriveTorqueAtEngine;
+	int mGear;
+	float mGearShiftTimer;
+	float mThrottle;
+	float mSpool;
+	float mPSI;
+	float mInductionBoost;
+	float mShiftUpRPM[10];
+	float mShiftDownRPM[10];
+	float mAngularVelocity;
+	float mAngularAcceleration;
+	float mTransmissionVelocity;
+	float mNOSCapacity;
+	float mNOSBoost;
+	float mNOSEngaged;
+	float mClutchRPMDiff;
+	bool mEngineBraking;
+	float mSportShifting;
+	IInput *mIInput;
+	IChassis *mSuspension;
 	Attrib::Gen::car_tuning mCarInfo;
-	float mRPM;											  // offset 0x184, size 0x4
-	ShiftStatus mShiftStatus;								// offset 0x188, size 0x4
-	ShiftPotential mShiftPotential;						  // offset 0x18C, size 0x4
-	float mPeakTorque;									   // offset 0x190, size 0x4
-	float mPeakTorqueRPM;									// offset 0x194, size 0x4
-	float mMaxHP;											// offset 0x198, size 0x4
-	struct Clutch mClutch;								   // offset 0x19C, size 0xC
-	bool mBlown;											 // offset 0x1A8, size 0x1
-	float mSabotage;										 // offset 0x1AC, size 0x4
+	float mRPM;
+	ShiftStatus mShiftStatus;
+	ShiftPotential mShiftPotential;
+	float mPeakTorque;
+	float mPeakTorqueRPM;
+	float mMaxHP;
+	struct Clutch mClutch;
+	bool mBlown;
+	float mSabotage;
+	eTransmissionOverride mTransmissionOverride;
+
+	IEngine tmpEngine;
+	ITransmission tmpTransmission;
+	IInductable tmpInductable;
+	ITiptronic tmpTiptronic;
+	IRaceEngine tmpRaceEngine;
+	IEngineDamage tmpEngineDamage;
+
+	IEngine* GetIEngine() { GET_FAKE_INTERFACE(EngineRacer, IEngine, tmpEngine) }
+	ITransmission* GetITransmission() { GET_FAKE_INTERFACE(EngineRacer, ITransmission, tmpTransmission) }
+	IInductable* GetIInductable() { GET_FAKE_INTERFACE(EngineRacer, IInductable, tmpInductable) }
+	ITiptronic* GetITiptronic() { GET_FAKE_INTERFACE(EngineRacer, ITiptronic, tmpTiptronic) }
+	IRaceEngine* GetIRaceEngine() { GET_FAKE_INTERFACE(EngineRacer, IRaceEngine, tmpRaceEngine) }
+	IEngineDamage* GetIEngineDamage() { GET_FAKE_INTERFACE(EngineRacer, IEngineDamage, tmpEngineDamage) }
 };

@@ -478,7 +478,7 @@ void SuspensionRacer::Create(const BehaviorParams& bp) {
 	FUNCTION_LOG("SuspensionRacer::Create");
 
 	*(uintptr_t*)this = (uintptr_t)&NewSuspensionRacerVTable;
-	*(uintptr_t*)&tmpChassis = (uintptr_t)&NewChassisVTable;
+	*(uintptr_t*)&tmpChassis = (uintptr_t)&MWChassis::NewVTable;
 	tmpChassis.mCOMObject = &bp.fowner->Object;
 	bp.fowner->Object.Add(&tmpChassis);
 

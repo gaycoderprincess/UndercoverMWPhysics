@@ -504,11 +504,7 @@ public:
 	}
 
 	// hack around this enough so the compiler doesn't complain about the vtable being missing
-	IChassis* GetIChassis() {
-		auto ptr = (uintptr_t)this;
-		ptr += offsetof(SuspensionRacer, tmpChassis);
-		return (IChassis*)ptr;
-	}
+	IChassis* GetIChassis() { GET_FAKE_INTERFACE(SuspensionRacer, IChassis, tmpChassis) }
 
 	void OnOwnerAttached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerAttached"); }
 	void OnOwnerDetached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerDetached"); }
