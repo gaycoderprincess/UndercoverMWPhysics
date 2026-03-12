@@ -459,39 +459,46 @@ void DebugMenu() {
 	ChloeMenuLib::EndMenu();
 }
 
+class FactoryEntry {
+public:
+	UCrc32 mSignature;
+	void* mConstructor;
+	FactoryEntry *mTail;
+
+	static inline auto& mHead = *(FactoryEntry**)0xDE7130;
+};
+FactoryEntry __EngineRacerMW;
+FactoryEntry __SuspensionRacerMW;
+
 auto oldctorbase = (void*(__thiscall*)(void*, BehaviorParams*, int))0x6DB670;
 auto oldctorchassis = (void*(__thiscall*)(void*, BehaviorParams*, SuspensionParams*))0x73CEA0;
 SuspensionRacer* ChassisHumanConstructHooked(BehaviorParams* bp, SuspensionParams* sp) {
-	auto simable = bp->fowner->Object.Find<ISimable>();
-	if (simable->mCOMObject->Find<IVehicle>()->GetDriverClass() == DRIVER_HUMAN) {
-		auto data = pSuspension = (SuspensionRacer*)gFastMem.Alloc(sizeof(SuspensionRacer), nullptr);
-		memset(data,0,sizeof(SuspensionRacer));
-		oldctorbase(data, bp, 0);
-		data->Create(*bp);
-		return data;
-	}
-	else {
-		auto data = (SuspensionRacer*)gFastMem.Alloc(0x12E0, nullptr);
-		oldctorchassis(data, bp, sp);
-		return data;
-	}
+	auto data = pSuspension = (SuspensionRacer*)gFastMem.Alloc(sizeof(SuspensionRacer), nullptr);
+	memset(data,0,sizeof(SuspensionRacer));
+	oldctorbase(data, bp, 0);
+	data->Create(*bp);
+	return data;
 }
 
 auto oldctorengine = (void*(__thiscall*)(void*, BehaviorParams*))0x73A9D0;
 EngineRacer* EngineRacerConstructHooked(BehaviorParams* bp) {
-	auto simable = bp->fowner->Object.Find<ISimable>();
-	if (simable->mCOMObject->Find<IVehicle>()->GetDriverClass() == DRIVER_HUMAN) {
-		auto data = pEngine = (EngineRacer*)gFastMem.Alloc(sizeof(EngineRacer), nullptr);
-		memset(data,0,sizeof(EngineRacer));
-		oldctorbase(data, bp, 0);
-		data->Create(*bp);
-		return data;
-	}
-	else {
-		auto data = (EngineRacer*)gFastMem.Alloc(0x25C, nullptr);
-		oldctorengine(data, bp);
-		return data;
-	}
+	auto data = pEngine = (EngineRacer*)gFastMem.Alloc(sizeof(EngineRacer), nullptr);
+	memset(data,0,sizeof(EngineRacer));
+	oldctorbase(data, bp, 0);
+	data->Create(*bp);
+	return data;
+}
+
+void RegisterNewBehaviors() {
+	__EngineRacerMW.mSignature.mCRC = Attrib::StringHash32("EngineRacerMW");
+	__EngineRacerMW.mConstructor = (void*)&EngineRacerConstructHooked;
+	__EngineRacerMW.mTail = FactoryEntry::mHead;
+	FactoryEntry::mHead = &__EngineRacerMW;
+
+	__SuspensionRacerMW.mSignature.mCRC = Attrib::StringHash32("SuspensionRacerMW");
+	__SuspensionRacerMW.mConstructor = (void*)&ChassisHumanConstructHooked;
+	__SuspensionRacerMW.mTail = FactoryEntry::mHead;
+	FactoryEntry::mHead = &__SuspensionRacerMW;
 }
 
 void AssistLoop() {
@@ -526,34 +533,18 @@ std::vector<Attrib::Collection*> FindCollectionAndAllChildren(const char* classN
 	return out;
 }
 
-void __thiscall GetAttribHooked(Attrib::Instance* pThis, Attrib::Collection* collection, uint32_t msgPort) {
-	auto tmp = (uintptr_t)collection;
-	if (tmp && tmp < 0x1000) {
-		WriteLog(std::format("collection {:X} from {:X}", tmp, (uintptr_t)__builtin_return_address(0)));
-		collection = nullptr;
-	}
-
-	pThis->mCollection = collection;
-	pThis->mMsgPort = msgPort;
-	pThis->mLayoutPtr = nullptr;
-	pThis->mFlags = 0;
-	if (collection) {
-		if (!collection->mSource) {
-			pThis->mFlags = 1;
+UCrc32* __thiscall LookupBehaviorSignatureHooked(PVehicle* pThis, UCrc32* result, const Attrib::StringKey* mechanic) {
+	if (pThis->mDriverClass == DRIVER_HUMAN) {
+		if (mechanic == &BEHAVIOR_MECHANIC_ENGINE) {
+			*result = __EngineRacerMW.mSignature;
+			return result;
 		}
-		pThis->mLayoutPtr = collection->mLayout;
-		++collection->mTable.mRefCount;
+		if (mechanic == &BEHAVIOR_MECHANIC_SUSPENSION) {
+			*result = __SuspensionRacerMW.mSignature;
+			return result;
+		}
 	}
-}
-
-float __thiscall GetMaxSpeedometerHooked(ITransmission* pThis) {
-	WriteLog(std::format("GetMaxSpeedometer {:X} from {:X}", (uintptr_t)pThis, (uintptr_t)__builtin_return_address(0)));
-	auto ptr = (uintptr_t)pThis;
-	ptr -= 0x44;
-	if (*(uint32_t*)ptr < 0x1000) {
-		WriteLog(std::format("BAD GetMaxSpeedometer {:X} from {:X}", (uintptr_t)pThis, (uintptr_t)__builtin_return_address(0)));
-	}
-	return 100.0;
+	return pThis->LookupBehaviorSignature(result, mechanic);
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
@@ -568,6 +559,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 
 			NyaHooks::LateInitHook::Init();
 			NyaHooks::LateInitHook::aFunctions.push_back([](){
+				RegisterNewBehaviors();
+
 				DLLDirSetter _setdir;
 
 				for (const auto& entry : std::filesystem::directory_iterator("CarDataDump")) {
@@ -596,16 +589,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 
 			ChloeMenuLib::RegisterMenu("Debug Menu", &DebugMenu);
 
-			//NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x73F88D, 0x6DB670);
-			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73F830, &ChassisHumanConstructHooked);
-			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73EBF0, &EngineRacerConstructHooked); // Engine, this is what the player uses
-			//NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73EC60, &EngineRacerConstructHooked); // EngineRacer
-			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x462C80, &GetAttribHooked);
-
-			// disable simple physics
-			//NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x425E20, 0x425F2A);
-
-			//NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x700720, &GetMaxSpeedometerHooked);
+			NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x6F077A, &LookupBehaviorSignatureHooked);
+			NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x6F07D2, &LookupBehaviorSignatureHooked);
 
 			// AIVehicle::GetOverSteerCorrection, disable road surface getter during race cutscenes
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x40AAC8, 0x40AB89);
