@@ -401,7 +401,7 @@ float SuspensionRacer::Tire::UpdateLoaded(float lat_vel, float fwd_vel, float bo
 }
 
 void SuspensionRacer::CreateTires() {
-	FUNCTION_LOG("SuspensionRacer::CreateTires");
+	SUSPENSIONRACER_FUNCTION_LOG("CreateTires");
 
 	for (int i = 0; i < 4; ++i) {
 		delete mTires[i];
@@ -429,7 +429,7 @@ void SuspensionRacer::CreateTires() {
 }
 
 void SuspensionRacer::OnBehaviorChange(const UCrc32 &mechanic) {
-	FUNCTION_LOG("SuspensionRacer::OnBehaviorChange");
+	SUSPENSIONRACER_FUNCTION_LOG("OnBehaviorChange");
 	if (mechanic.mCRC == BEHAVIOR_MECHANIC_ENGINE.mHash32) {
 		GetOwner()->QueryInterface(&mTransmission);
 		GetOwner()->QueryInterface(&mEngine);
@@ -471,7 +471,7 @@ void* NewSuspensionRacerVTable[] = {
 };
 
 void SuspensionRacer::Create(const BehaviorParams& bp) {
-	FUNCTION_LOG("SuspensionRacer::Create");
+	SUSPENSIONRACER_FUNCTION_LOG("Create");
 
 	*(uintptr_t*)this = (uintptr_t)&NewSuspensionRacerVTable;
 	*(uintptr_t*)&tmpChassis = (uintptr_t)&MWChassis::NewVTable;
@@ -1738,7 +1738,7 @@ static const float TweakGameBreakerRampOutPhysicsTime = 1.0f / 3.0f;
 static const float Tweak_DragAeroMult = 1.5f;
 
 void SuspensionRacer::OnTaskSimulate(float dT) {
-	//FUNCTION_LOG("SuspensionRacer::OnTaskSimulate");
+	//SUSPENSIONRACER_FUNCTION_LOG("OnTaskSimulate");
 
 	if (!mCollisionBody || !mRB) {
 		WriteLog("OnTaskSimulate early exit");
@@ -1864,7 +1864,10 @@ void SuspensionRacer::MatchSpeed(float speed) {
 }
 
 void SuspensionRacer::dtor(char a2) {
-	FUNCTION_LOG("SuspensionRacer::dtor");
+	GetIChassis()->mCOMObject->Remove(GetIChassis());
+	return;
+
+	SUSPENSIONRACER_FUNCTION_LOG("dtor");
 
 	delete mMWInfo;
 
@@ -1885,7 +1888,7 @@ void SuspensionRacer::dtor(char a2) {
 }
 
 float SuspensionRacer::CalculateUndersteerFactor() {
-	FUNCTION_LOG("SuspensionRacer::CalculateUndersteerFactor");
+	SUSPENSIONRACER_FUNCTION_LOG("CalculateUndersteerFactor");
 	float magnitude = 0.0f;
 	float slip_avg = (GetIChassis()->GetWheelSkid(0) + GetIChassis()->GetWheelSkid(1)) / 2.0f;
 	float steer = (GetIChassis()->GetWheelSteer(0) + GetIChassis()->GetWheelSteer(1)) / 2.0f;
@@ -1897,7 +1900,7 @@ float SuspensionRacer::CalculateUndersteerFactor() {
 }
 
 float SuspensionRacer::CalculateOversteerFactor() {
-	FUNCTION_LOG("SuspensionRacer::CalculateOversteerFactor");
+	SUSPENSIONRACER_FUNCTION_LOG("CalculateOversteerFactor");
 	float speed = GetOwner()->GetRigidBody()->GetSpeed();
 	float magnitude = 0.0f;
 	if ((GetVehicle()->GetSpeed() > 0.0f) && (speed > 1.0f)) {
@@ -1907,7 +1910,7 @@ float SuspensionRacer::CalculateOversteerFactor() {
 }
 
 void SuspensionRacer::Reset() {
-	FUNCTION_LOG("SuspensionRacer::Reset");
+	SUSPENSIONRACER_FUNCTION_LOG("Reset");
 
 	ISimable *owner = GetOwner();
 	IRigidBody *rigidBody = owner->GetRigidBody();

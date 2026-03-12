@@ -16,14 +16,14 @@ public:
 	UMath::Vector4 mIntegral;
 
 	MWWheel(unsigned int flags) {
-		FUNCTION_LOG("Wheel::Wheel");
+		SUSPENSIONRACER_FUNCTION_LOG("Wheel::Wheel");
 		memset(this,0,sizeof(*this));
 		mFlags = flags;
 		Reset();
 	}
 
 	void Reset() {
-		FUNCTION_LOG("Wheel::Reset");
+		SUSPENSIONRACER_FUNCTION_LOG("Wheel::Reset");
 		mSurfaceStick = 0.0;
 		mIntegral.x = 0.0;
 		mIntegral.y = 0.0;
@@ -508,16 +508,16 @@ public:
 	// hack around this enough so the compiler doesn't complain about the vtable being missing
 	IChassis* GetIChassis() { GET_FAKE_INTERFACE(SuspensionRacer, IChassis, tmpChassis) }
 
-	void OnOwnerAttached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerAttached"); }
-	void OnOwnerDetached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerDetached"); }
-	void OnPause() { FUNCTION_LOG("OnPause");  }
-	void OnUnPause() { FUNCTION_LOG("OnUnPause");  }
-	void OnDebugDraw() { FUNCTION_LOG("OnDebugDraw");  }
-	int GetPriority() { FUNCTION_LOG("GetPriority"); return mPriority; }
-	float GetDownCoefficient(float f) { FUNCTION_LOG("GetDownCoefficient"); return GetIChassis()->GetDownCoefficient(); }
-	float GetDynamicRideHeight(unsigned int idx, State*) { FUNCTION_LOG("GetDynamicRideHeight"); return GetRideHeight(idx); }
-	float GetDriftValue() { FUNCTION_LOG("GetDriftValue"); return 0.0; } // todo
-	void ApplyVehicleEntryForces(bool enteringVehicle, const UMath::Vector3 *pos, bool calledfromEvent) { FUNCTION_LOG("ApplyVehicleEntryForces");  }
+	void OnOwnerAttached(IAttachable* pOther) { SUSPENSIONRACER_FUNCTION_LOG("OnOwnerAttached"); }
+	void OnOwnerDetached(IAttachable* pOther) { SUSPENSIONRACER_FUNCTION_LOG("OnOwnerDetached"); }
+	void OnPause() { SUSPENSIONRACER_FUNCTION_LOG("OnPause");  }
+	void OnUnPause() { SUSPENSIONRACER_FUNCTION_LOG("OnUnPause");  }
+	void OnDebugDraw() { SUSPENSIONRACER_FUNCTION_LOG("OnDebugDraw");  }
+	int GetPriority() { SUSPENSIONRACER_FUNCTION_LOG("GetPriority"); return mPriority; }
+	float GetDownCoefficient(float f) { SUSPENSIONRACER_FUNCTION_LOG("GetDownCoefficient"); return GetIChassis()->GetDownCoefficient(); }
+	float GetDynamicRideHeight(unsigned int idx, State*) { SUSPENSIONRACER_FUNCTION_LOG("GetDynamicRideHeight"); return GetRideHeight(idx); }
+	float GetDriftValue() { SUSPENSIONRACER_FUNCTION_LOG("GetDriftValue"); return 0.0; } // todo
+	void ApplyVehicleEntryForces(bool enteringVehicle, const UMath::Vector3 *pos, bool calledfromEvent) { SUSPENSIONRACER_FUNCTION_LOG("ApplyVehicleEntryForces");  }
 
 	void dtor(char a2);
 	void Reset();
@@ -593,3 +593,4 @@ public:
 		return mTires[idx]->GetSlipAngle();
 	}
 };
+SuspensionRacer* pSuspension = nullptr;

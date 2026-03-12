@@ -25,7 +25,7 @@ namespace Physics {
 		};
 
 		// Credits: Brawltendo
-		float EngineInertia(const MWCarTuning* mw, const Attrib::Gen::car_tuning &engine, const bool loaded) {
+		float EngineInertia(const MWCarTuning* mw, const bool loaded) {
 			float scale;
 			if (loaded)
 				scale = 1.f;
@@ -35,7 +35,7 @@ namespace Physics {
 		}
 
 		// Credits: Brawltendo
-		eInductionType InductionType(const MWCarTuning* mw, const Attrib::Gen::car_tuning &induction) {
+		eInductionType InductionType(const MWCarTuning* mw) {
 			if (mw->HIGH_BOOST > 0.0f || mw->LOW_BOOST > 0.0f) {
 				// turbochargers don't produce significant boost until above the boost threshold (the lowest engine RPM at which it will spool up)
 				// meanwhile superchargers apply boost proportionally to the engine RPM, so this param isn't needed there
@@ -49,7 +49,7 @@ namespace Physics {
 			}
 		}
 
-		float Torque(const MWCarTuning* mw, const Attrib::Gen::car_tuning &engine, float rpm) {
+		float Torque(const MWCarTuning* mw, float rpm) {
 			float rpm_min = mw->IDLE;
 			float rpm_max = mw->MAX_RPM;
 			rpm = UMath::Clamp(rpm, mw->IDLE, mw->RED_LINE);
@@ -65,14 +65,14 @@ namespace Physics {
 			return 0.0f;
 		}
 
-		float WheelDiameter(const Attrib::Gen::car_tuning &tires, bool front) {
+		float WheelDiameter(const Attrib::Gen::car_tuning& tires, bool front) {
 			int axle = front ? 0 : 1;
 			float diameter = INCH2METERS(tires.GetLayout()->RIM_SIZE.At(axle));
 			return diameter + tires.GetLayout()->SECTION_WIDTH.At(axle) * 0.001f * 2.0f * (tires.GetLayout()->ASPECT_RATIO.At(axle) * 0.01f);
 		}
 
 		// Credits: Brawltendo
-		float NosBoost(const MWCarTuning* mw, const Attrib::Gen::car_tuning &nos, const Tunings *tunings) {
+		float NosBoost(const MWCarTuning* mw, const Tunings *tunings) {
 			float torque_scale = 1.0f;
 			float boost = mw->TORQUE_BOOST;
 			if (tunings) {
@@ -82,7 +82,7 @@ namespace Physics {
 		}
 
 		// Credits: Brawltendo
-		float NosCapacity(const MWCarTuning* mw, const Attrib::Gen::car_tuning &nos, const Tunings *tunings) {
+		float NosCapacity(const MWCarTuning* mw, const Tunings *tunings) {
 			float capacity = mw->NOS_CAPACITY;
 			if (tunings) {
 				capacity -= capacity * tunings->Value[Physics::Tunings::NOS] * 0.25f;
@@ -91,7 +91,7 @@ namespace Physics {
 		}
 
 		// Credits: Brawltendo
-		Mps Speedometer(const MWCarTuning* mw, const Attrib::Gen::car_tuning &engine, Rpm rpm, GearID gear, const Tunings *tunings) {
+		Mps Speedometer(const MWCarTuning* mw, const Attrib::Gen::car_tuning& engine, Rpm rpm, GearID gear, const Tunings *tunings) {
 			float speed = 0.0f;
 			float gear_ratio = mw->GEAR_RATIO[gear] * mw->FINAL_GEAR;
 			float power_range = mw->RED_LINE - mw->IDLE;
@@ -113,7 +113,7 @@ namespace Physics {
 		}
 
 		// Credits: Brawltendo
-		float InductionRPM(const MWCarTuning* mw, const Attrib::Gen::car_tuning &engine, const Tunings *tunings) {
+		float InductionRPM(const MWCarTuning* mw, const Tunings *tunings) {
 			float spool = mw->SPOOL;
 
 			// tune the (normalized) RPM at which forced induction kicks in
@@ -133,7 +133,7 @@ namespace Physics {
 		}
 
 		// Credits: Brawltendo
-		float InductionBoost(const MWCarTuning* mw, const Attrib::Gen::car_tuning &engine, float rpm, float spool, const Tunings *tunings, float *psi) {
+		float InductionBoost(const MWCarTuning* mw, float rpm, float spool, const Tunings *tunings, float *psi) {
 			if (psi) {
 				*psi = 0.0f;
 			}
@@ -142,7 +142,7 @@ namespace Physics {
 			float rpm_min = mw->IDLE;
 			float rpm_max = mw->RED_LINE;
 			float induction_boost = 0.f;
-			float spool_rpm = InductionRPM(mw, engine, tunings);
+			float spool_rpm = InductionRPM(mw, tunings);
 			float high_boost = mw->HIGH_BOOST;
 			float low_boost = mw->LOW_BOOST;
 			float drag = mw->VACUUM;
@@ -176,7 +176,7 @@ namespace Physics {
 		}
 
 		// Credits: Brawltendo
-		bool ShiftPoints(const MWCarTuning* mw, const Attrib::Gen::car_tuning &tuning, float *shift_up,
+		bool ShiftPoints(const MWCarTuning* mw, float *shift_up,
 										float *shift_down, unsigned int numpts) {
 			for (int i = 0; i < numpts; ++i) {
 				shift_up[i] = 0.0f;
@@ -202,12 +202,12 @@ namespace Physics {
 					while (!flag) {
 						// seems like the rpm and spool params are swapped in both instances
 						// so either it's a mistake that was copy-pasted or it was a deliberate choice
-						float currenttorque = Torque(mw, tuning, max) * (InductionBoost(mw, tuning, 1.0f, max, NULL, NULL) + 1.0f);
+						float currenttorque = Torque(mw, max) * (InductionBoost(mw, 1.0f, max, NULL, NULL) + 1.0f);
 						float shiftuptorque;
 						if (UMath::Abs(g1) > 0.00001f) {
 							float ratio = g2 / g1;
 							float next_rpm = ratio * max;
-							shiftuptorque = Torque(mw, tuning, next_rpm) * (InductionBoost(mw, tuning, 1.0f, next_rpm, NULL, NULL) + 1.0f) * g2 / g1;
+							shiftuptorque = Torque(mw, next_rpm) * (InductionBoost(mw, 1.0f, next_rpm, NULL, NULL) + 1.0f) * g2 / g1;
 						} else {
 							shiftuptorque = 0.0f;
 						}
@@ -242,7 +242,7 @@ namespace Physics {
 			return true;
 		}
 
-		float MaxInductedTorque(const MWCarTuning* mw, Attrib::Gen::car_tuning &engine, Rpm &atrpm, const Tunings *tunings) {
+		float MaxInductedTorque(const MWCarTuning* mw, Rpm &atrpm, const Tunings *tunings) {
 			if (mw->TORQUE.size() > 1)  {
 				auto v9 = 0.0;
 				atrpm = mw->IDLE;
@@ -250,7 +250,7 @@ namespace Physics {
 				auto v13 = ((mw->MAX_RPM - mw->IDLE) / (mw->TORQUE.size() - 1));
 				int v10 = 0;
 				while (v10 < mw->TORQUE.size()) {
-					auto v18 = (mw->TORQUE[v10] * (Physics::Info::InductionBoost(mw, engine, v12, 1.0, tunings, nullptr) + 1.0));
+					auto v18 = (mw->TORQUE[v10] * (Physics::Info::InductionBoost(mw, v12, 1.0, tunings, nullptr) + 1.0));
 					if (v18 > v9) {
 						atrpm = v12;
 						v9 = v18;
@@ -272,14 +272,14 @@ namespace Physics {
 			return 0.0;
 		}
 
-		float MaxInductedPower(const MWCarTuning* mw, Attrib::Gen::car_tuning& engine, const Tunings* tunings) {
+		float MaxInductedPower(const MWCarTuning* mw, const Tunings* tunings) {
 			if (mw->TORQUE.size() > 1)  {
 				float v11 = 0.0;
 				auto v12 = mw->IDLE;
 				auto v15 = ((mw->MAX_RPM - mw->IDLE) / (mw->TORQUE.size() - 1));
 				int v13 = 0;
 				while (v13 < mw->TORQUE.size())  {
-					auto v20 = (Physics::Info::InductionBoost(mw, engine, v12, 1.0, tunings, nullptr) + 1.0);
+					auto v20 = (Physics::Info::InductionBoost(mw, v12, 1.0, tunings, nullptr) + 1.0);
 					if ( (((mw->TORQUE[v13] * v20) * v12) * 0.00019040366) > v11 )
 						v11 = (((mw->TORQUE[v13] * v20) * v12) * 0.00019040366);
 					v12 = (v12 + v15);
@@ -370,7 +370,7 @@ class EngineRacer : public VehicleBehavior {
 	void Create(const BehaviorParams &bp);
 	GearID GuessGear(float speed) const;
 	float GuessRPM(float speed, GearID atgear) const;
-	ShiftPotential FindShiftPotential(GearID gear, float rpm) const;
+	ShiftPotential FindShiftPotential(GearID gear, float rpm, float rpmFromGround) const;
 	float GetDifferentialAngularVelocity(bool locked) const;
 	float GetDriveWheelSlippage() const;
 	void SetDifferentialAngularVelocity(float w);
@@ -379,13 +379,13 @@ class EngineRacer : public VehicleBehavior {
 	float GetBrakingTorque(float engine_torque, float rpm) const;
 	void CalcShiftPoints();
 	bool DoGearChange(GearID gear, bool automatic);
-	void AutoShift();
+	void AutoShift(float dT);
 
-	void OnOwnerAttached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerAttached"); }
-	void OnOwnerDetached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerDetached"); }
-	void OnPause() { FUNCTION_LOG("OnPause");  }
-	void OnUnPause() { FUNCTION_LOG("OnUnPause");  }
-	int GetPriority() { FUNCTION_LOG("GetPriority"); return mPriority; }
+	void OnOwnerAttached(IAttachable* pOther) { ENGINERACER_FUNCTION_LOG("OnOwnerAttached"); }
+	void OnOwnerDetached(IAttachable* pOther) { ENGINERACER_FUNCTION_LOG("OnOwnerDetached"); }
+	void OnPause() { ENGINERACER_FUNCTION_LOG("OnPause");  }
+	void OnUnPause() { ENGINERACER_FUNCTION_LOG("OnUnPause");  }
+	int GetPriority() { ENGINERACER_FUNCTION_LOG("GetPriority"); return mPriority; }
 
 	Physics::Tunings* GetVehicleTunings() const {
 		return nullptr;
@@ -437,7 +437,7 @@ class EngineRacer : public VehicleBehavior {
 		return mMaxHP;
 	}
 	Hp GetMinHorsePower() const {
-		return FTLB2HP(Physics::Info::Torque(mMWInfo, mCarInfo, mMWInfo->IDLE) * mMWInfo->IDLE, 1.0f);
+		return FTLB2HP(Physics::Info::Torque(mMWInfo, mMWInfo->IDLE) * mMWInfo->IDLE, 1.0f);
 	}
 	float GetRPM() const {
 		return mRPM;
@@ -477,18 +477,21 @@ class EngineRacer : public VehicleBehavior {
 	}
 
 	bool IsEngineBraking() {
+		ENGINERACER_FUNCTION_LOG("IsEngineBraking");
 		return mEngineBraking;
 	}
 	bool IsShiftingGear() {
+		ENGINERACER_FUNCTION_LOG("IsShiftingGear");
 		return mGearShiftTimer > 0.0f;
 	}
 	bool IsReversing() const {
+		ENGINERACER_FUNCTION_LOG("IsReversing");
 		return mGear == G_REVERSE;
 	}
 
 	// IInductable
 	Physics::Info::eInductionType InductionType() const {
-		return Physics::Info::InductionType(mMWInfo, mCarInfo);
+		return Physics::Info::InductionType(mMWInfo);
 	}
 	float GetInductionPSI() const {
 		return mPSI;
@@ -538,14 +541,15 @@ class EngineRacer : public VehicleBehavior {
 
 	ShiftStatus OnGearChange(GearID gear);
 	bool UseRevLimiter() const {
+		ENGINERACER_FUNCTION_LOG("UseRevLimiter");
 		return true;
 	}
 	void DoECU();
-	float DoThrottle();
+	float DoThrottle(float dT);
 	void DoInduction(const Physics::Tunings *tunings, float dT);
 	float DoNos(const Physics::Tunings *tunings, float dT, bool engaged);
 	void DoShifting(float dT);
-	ShiftPotential UpdateShiftPotential(GearID gear, float rpm);
+	ShiftPotential UpdateShiftPotential(GearID gear, float rpm, float rpmFromGround);
 	float GetEngineTorque(float rpm) const;
 
 	// Inlines
@@ -576,7 +580,7 @@ class EngineRacer : public VehicleBehavior {
 		}
 	}
 
-	float GetShiftDelay(unsigned int gear) const {
+	float GetShiftDelay(unsigned int gear, bool shiftUp) const {
 		return mMWInfo->SHIFT_SPEED * GetGearRatio(gear);
 	}
 
@@ -627,7 +631,7 @@ class EngineRacer : public VehicleBehavior {
 	float mPeakTorque;
 	float mPeakTorqueRPM;
 	float mMaxHP;
-	struct Clutch mClutch;
+	Clutch mClutch;
 	bool mBlown;
 	float mSabotage;
 	eTransmissionOverride mTransmissionOverride;
@@ -646,3 +650,4 @@ class EngineRacer : public VehicleBehavior {
 	IRaceEngine* GetIRaceEngine() { GET_FAKE_INTERFACE(EngineRacer, IRaceEngine, tmpRaceEngine) }
 	IEngineDamage* GetIEngineDamage() { GET_FAKE_INTERFACE(EngineRacer, IEngineDamage, tmpEngineDamage) }
 };
+EngineRacer* pEngine = nullptr;

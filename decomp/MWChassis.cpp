@@ -325,10 +325,17 @@ namespace MWChassis {
 		//return pThis->mNumWheelsOnGround;
 		return 0;
 	}
-	float __thiscall GetWheelAngularVelocity(uintptr_t ptr, int i) {
+	float __thiscall GetWheelAngularVelocity(uintptr_t ptr, int index) {
 		ICHASSIS_FUNCTION_LOG("GetWheelAngularVelocity");
 		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[i]->GetAngularVelocity();
+		SuspensionRacer::Tire *tire = pThis->mTires[index];
+		if (tire->IsBrakeLocked()) {
+			return 0.0f;
+		}
+		if (!tire->IsOnGround() || !tire->IsSlipping()) {
+			return tire->GetAngularVelocity();
+		}
+		return tire->GetRoadSpeed() / tire->GetRadius();
 	}
 	void __thiscall SetWheelAngularVelocity(uintptr_t ptr, int i, float f) {
 		ICHASSIS_FUNCTION_LOG("SetWheelAngularVelocity");
@@ -363,10 +370,10 @@ namespace MWChassis {
 		ICHASSIS_FUNCTION_LOG("GetRideHeight");
 		auto pThis = GetSuspensionRacer(ptr);
 		float ride = pThis->GetRideHeight(idx);
-		//const Physics::Tunings *tunings = GetVehicle()->GetTunings();
-		//if (tunings) {
-		//	ride += INCH2METERS(tunings->Value[Physics::Tunings::RIDEHEIGHT]);
-		//}
+		const Physics::Tunings *tunings = pThis->GetVehicleTunings();
+		if (tunings) {
+			ride += INCH2METERS(tunings->Value[Physics::Tunings::RIDEHEIGHT]);
+		}
 		return ride;
 	}
 	float __thiscall GetWheelRadius(uintptr_t ptr, unsigned int idx) {

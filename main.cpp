@@ -32,7 +32,9 @@ public:
 	}
 };
 
-#define FUNCTION_LOG(name) WriteLog(std::format("{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)));
+//#define FUNCTION_LOG(name) WriteLog(std::format("{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)));
+#define SUSPENSIONRACER_FUNCTION_LOG(name) WriteLog(std::format("SuspensionRacer::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)));
+#define ENGINERACER_FUNCTION_LOG(name) WriteLog(std::format("EngineRacer::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)));
 //#define ICHASSIS_FUNCTION_LOG(name) WriteLog(std::format("IChassis::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
 //#define ITIPTRONIC_FUNCTION_LOG(name) WriteLog(std::format("ITiptronic::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
 //#define IRACEENGINE_FUNCTION_LOG(name) WriteLog(std::format("IRaceEngine::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
@@ -324,8 +326,6 @@ void QuickValueEditor(const char* name, float& value) {
 // mass 1270
 // tensor scale 1.2 1.6 1.2
 
-SuspensionRacer* pSuspension = nullptr;
-EngineRacer* pEngine = nullptr;
 void DebugMenu() {
 	ChloeMenuLib::BeginMenu();
 
@@ -343,8 +343,12 @@ void DebugMenu() {
 			DrawMenuOption(std::format("CARSLOTID_SUSPENSION_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_SUSPENSION_PACKAGE].kit_num));
 			DrawMenuOption(std::format("CARSLOTID_TIRE_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_TIRE_PACKAGE].kit_num));
 
+			DrawMenuOption(std::format("mGear {}", pEngine->mGear));
+			DrawMenuOption(std::format("GetTopGear {}", (int)pEngine->GetTopGear()));
+			DrawMenuOption(std::format("mTransmissionVelocity {:.2f}", pEngine->mTransmissionVelocity));
 			DrawMenuOption(std::format("GetDriveTorque {:.2f}", pEngine->GetDriveTorque()));
 			DrawMenuOption(std::format("GetSpeedometer {:.2f}", pEngine->GetSpeedometer()));
+			DrawMenuOption(std::format("CalcSpeedometer {:.2f}", pEngine->CalcSpeedometer(RPS2RPM(pEngine->mTransmissionVelocity), pEngine->mGear)));
 			DrawMenuOption(std::format("GetMaxSpeedometer {:.2f}", pEngine->GetMaxSpeedometer()));
 			DrawMenuOption(std::format("IsGearChanging {}", pEngine->IsGearChanging()));
 			DrawMenuOption(std::format("mEngineBraking {}", pEngine->mEngineBraking));
@@ -352,6 +356,9 @@ void DebugMenu() {
 			DrawMenuOption(std::format("TORQUE.size() {}", pEngine->mMWInfo->TORQUE.size()));
 			DrawMenuOption(std::format("mSuspension {:X}", (uintptr_t)pEngine->mSuspension));
 			DrawMenuOption(std::format("mIInput {:X}", (uintptr_t)pEngine->mIInput));
+			DrawMenuOption(std::format("actual mSuspension {:X}", (uintptr_t)pEngine->mVehicle->mCOMObject->Find<IChassis>()));
+			DrawMenuOption(std::format("actual mIInput {:X}", (uintptr_t)pEngine->mVehicle->mCOMObject->Find<IInput>()));
+			DrawMenuOption(std::format("pSuspension {:X}", (uintptr_t)pSuspension));
 			DrawMenuOption(std::format("GetControlGas {}", pEngine->mIInput->GetControlGas()));
 		}
 		else {
@@ -361,6 +368,8 @@ void DebugMenu() {
 		ChloeMenuLib::EndMenu();
 	}
 	if (DrawMenuOption("SuspensionRacer")) {
+		ChloeMenuLib::BeginMenu();
+
 	if (pSuspension) {
 		ISteeringWheel::SteeringType steer_type = ISteeringWheel::kGamePad;
 
@@ -433,11 +442,14 @@ void DebugMenu() {
 			DrawMenuOption(std::format("mSlip - {:.2f}", tire->mSlip));
 			DrawMenuOption(std::format("mRadius - {:.2f}", tire->mRadius));
 			DrawMenuOption(std::format("mRoadSpeed - {:.2f}", tire->mRoadSpeed));
+			DrawMenuOption(std::format("mAV - {:.2f}", tire->mAV));
 		}
 	}
 	else {
 		DrawMenuOption("woof?");
 	}
+
+		ChloeMenuLib::EndMenu();
 	}
 
 	ChloeMenuLib::EndMenu();
