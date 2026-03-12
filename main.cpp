@@ -324,6 +324,28 @@ EngineRacer* pEngine = nullptr;
 void DebugMenu() {
 	ChloeMenuLib::BeginMenu();
 
+	if (DrawMenuOption("EngineRacer")) {
+		ChloeMenuLib::BeginMenu();
+
+		if (pEngine) {
+			DrawMenuOption(std::format("GetDriveTorque {:.2f}", pEngine->GetDriveTorque()));
+			DrawMenuOption(std::format("GetSpeedometer {:.2f}", pEngine->GetSpeedometer()));
+			DrawMenuOption(std::format("GetMaxSpeedometer {:.2f}", pEngine->GetMaxSpeedometer()));
+			DrawMenuOption(std::format("IsGearChanging {}", pEngine->IsGearChanging()));
+			DrawMenuOption(std::format("mEngineBraking {}", pEngine->mEngineBraking));
+			DrawMenuOption(std::format("IDLE {:.2f}", pEngine->mCarInfo.GetLayout()->IDLE));
+			DrawMenuOption(std::format("TORQUE.size() {}", GetMWCarData(pEngine)->TORQUE.size()));
+			DrawMenuOption(std::format("mSuspension {:X}", (uintptr_t)pEngine->mSuspension));
+			DrawMenuOption(std::format("mIInput {:X}", (uintptr_t)pEngine->mIInput));
+			DrawMenuOption(std::format("GetControlGas {}", pEngine->mIInput->GetControlGas()));
+		}
+		else {
+			DrawMenuOption("woof?");
+		}
+
+		ChloeMenuLib::EndMenu();
+	}
+	if (DrawMenuOption("SuspensionRacer")) {
 	if (pSuspension) {
 		ISteeringWheel::SteeringType steer_type = ISteeringWheel::kGamePad;
 
@@ -400,6 +422,7 @@ void DebugMenu() {
 	}
 	else {
 		DrawMenuOption("woof?");
+	}
 	}
 
 	ChloeMenuLib::EndMenu();
@@ -518,7 +541,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 
 			//NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x73F88D, 0x6DB670);
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73F830, &ChassisHumanConstructHooked);
-			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73EC60, &EngineRacerConstructHooked);
+			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73EBF0, &EngineRacerConstructHooked); // Engine, this is what the player uses
+			//NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73EC60, &EngineRacerConstructHooked); // EngineRacer
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x462C80, &GetAttribHooked);
 
 			// AIVehicle::GetOverSteerCorrection, disable road surface getter during race cutscenes

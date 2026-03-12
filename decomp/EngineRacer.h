@@ -388,6 +388,11 @@ class EngineRacer : public VehicleBehavior {
 	void OnUnPause() { FUNCTION_LOG("OnUnPause");  }
 	int GetPriority() { FUNCTION_LOG("GetPriority"); return mPriority; }
 
+	Physics::Tunings* GetVehicleTunings() const {
+		return nullptr;
+		//return GetVehicle()->GetTunings();
+	}
+
 	void dtor(char a2);
 
 	// IEngine

@@ -124,7 +124,7 @@ void EngineRacer::dtor(char a2) {
 
 	if ((a2 & 1) != 0) {
 		WriteLog("gFastMem.Free");
-		gFastMem.Free(this, sizeof(SuspensionRacer), nullptr);
+		gFastMem.Free(this, sizeof(EngineRacer), nullptr);
 	}
 
 	WriteLog("EngineRacer::dtor finished");
@@ -136,8 +136,8 @@ float EngineRacer::GetHorsePower() const {
 }
 
 void EngineRacer::OnBehaviorChange(const UCrc32 &mechanic) {
-	FUNCTION_LOG("SuspensionRacer::OnBehaviorChange");
-	if (mechanic.mCRC == BEHAVIOR_MECHANIC_INPUT.mHash32) {
+	FUNCTION_LOG("EngineRacer::OnBehaviorChange");
+	if (mechanic.mCRC == BEHAVIOR_MECHANIC_AI.mHash32) {
 		GetOwner()->QueryInterface(&mIInput);
 	}
 	if (mechanic.mCRC == BEHAVIOR_MECHANIC_SUSPENSION.mHash32) {
@@ -509,7 +509,7 @@ void EngineRacer::SetDifferentialAngularVelocity(float w) {
 
 // Credits: Brawltendo
 float EngineRacer::CalcSpeedometer(float rpm, unsigned int gear) const {
-	const Physics::Tunings *tunings = GetVehicle()->GetTunings();
+	const Physics::Tunings *tunings = GetVehicleTunings();
 	return Physics::Info::Speedometer(mCarInfo, rpm, (GearID)gear, tunings);
 }
 
@@ -778,7 +778,7 @@ void EngineRacer::OnTaskSimulate(float dT) {
 		return;
 	}
 
-	const Physics::Tunings *tunings = GetVehicle()->GetTunings();
+	const Physics::Tunings *tunings = GetVehicleTunings();
 	bool is_staging = GetVehicle()->IsStaging();
 	mThrottle = DoThrottle();
 	mNOSBoost = DoNos(tunings, dT, iinput->GetControlNOS());

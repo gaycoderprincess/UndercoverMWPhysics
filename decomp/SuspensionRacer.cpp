@@ -1,7 +1,3 @@
-float GetSimTimeNew() {
-	return Sim::GetTime();
-}
-
 namespace Physics {
 	namespace Info {
 		float AerodynamicDownforce(const SuspensionRacer* pThis, const float speed) {
@@ -1047,7 +1043,7 @@ float SuspensionRacer::CalculateSteeringSpeed(State &state) {
 	// using a keyboard will always give you the fastest steering possible
 	float steer_input_speed = (state.steer_input - mSteering.LastInput) / state.time;
 
-	mSteering.InputSpeedCoeffAverage.Record(SteeringInputSpeedCoeffTable.GetValue(std::abs(steer_input_speed)), GetSimTimeNew());
+	mSteering.InputSpeedCoeffAverage.Record(SteeringInputSpeedCoeffTable.GetValue(std::abs(steer_input_speed)), Sim::GetTime());
 
 	// steering speed scales with vehicle forward speed
 	float steer_speed = 180.0f;
@@ -1104,7 +1100,7 @@ float SuspensionRacer::DoHumanSteering(State &state) {
 		newsteer = UMath::Lerp(newsteer, state.steer_input * Tweak_GameBreakerMaxSteer, mGameBreaker);
 	}
 
-	mSteering.InputAverage.Record(mSteering.LastInput, GetSimTimeNew());
+	mSteering.InputAverage.Record(mSteering.LastInput, Sim::GetTime());
 	return DEG2ANGLE(newsteer);
 }
 
@@ -1459,7 +1455,7 @@ void SuspensionRacer::DoWheelForces(State &state) {
 		ride_extra = tunings->Value[Physics::Tunings::RIDEHEIGHT];
 	}
 
-	float time = GetSimTimeNew();
+	float time = Sim::GetTime();
 	float shock_specs[2];
 	float spring_specs[2];
 	float sway_specs[2];

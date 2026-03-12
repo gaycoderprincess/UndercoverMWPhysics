@@ -100,6 +100,7 @@ namespace MWTransmission {
 			case EngineRacer::Clutch::ENGAGING:
 				return pThis->mClutch.mShiftingUp ? CLUTCH_STATE_UPSHIFT : CLUTCH_STATE_DOWNSHIFT;
 			case EngineRacer::Clutch::ENGAGED:
+			default:
 				return CLUTCH_STATE_ENGAGED;
 		}
 	}
