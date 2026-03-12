@@ -24,7 +24,12 @@ cp orig_mw/corvettec6r_top.conf che_vet_z06_06.conf
 cp orig_mw/corvettec6r_top.conf che_vet_z06_06_m26.conf
 cp orig_cb/300c_top.conf chr_300_srt_08.conf
 cp orig_mw/punto_top.conf civichb.conf
+cp orig_mw/911turbo_top.conf cop_car_911_tur_06.conf
+cp orig_cb/skyline_top.conf cop_car_gtr_08.conf
+cp orig_mw/viper_top.conf cop_car_mid_05.conf
+cp orig_mw/mustanggt_top.conf cop_car_mus_08.conf
 cp orig_mw/mustanggt_top.conf cop_car_mus_08_m22.conf
+cp orig_mw/cts_top.conf cop_car_suv_04.conf
 cp orig_cb/challengern_top.conf dod_cha_con_06.conf
 cp orig_cb/challenger71_top.conf dod_cha_stk_71.conf
 cp orig_cb/charger06_top.conf dod_chr_bee_07.conf
