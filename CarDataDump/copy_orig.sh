@@ -20,10 +20,10 @@ cp orig_mw_full/bmwm3gtre46.conf bmw_m3_e46_03.conf
 cp orig_mw_full/bmwm3gtre46_top.conf bmw_m3_e46_03_top.conf
 cp orig_mw_full/bmwm3gtr.conf bmw_m3_e92_08.conf
 cp orig_mw_full/bmwm3gtr_top.conf bmw_m3_e92_08_top.conf
-cp orig_cb_full/bmwm3gtre46_crosschase.conf bmw_m6_stk_08.conf
-cp orig_cb_full/bmwm3gtre46_crosschase_top.conf bmw_m6_stk_08_top.conf
-cp orig_cb_full/bmwm3gtre46_crosschase.conf bmw_m6_stk_08_boss.conf
-cp orig_cb_full/bmwm3gtre46_crosschase_top.conf bmw_m6_stk_08_boss_top.conf
+cp orig_cb_full/bmwm3gtre46.conf bmw_m6_stk_08.conf
+cp orig_cb_full/bmwm3gtre46_top.conf bmw_m6_stk_08_top.conf
+cp orig_cb_full/bmwm3gtre46.conf bmw_m6_stk_08_boss.conf
+cp orig_cb_full/bmwm3gtre46_top.conf bmw_m6_stk_08_boss_top.conf
 cp orig_cb_full/350z.conf bmw_z4_m_07.conf
 cp orig_cb_full/350z_top.conf bmw_z4_m_07_top.conf
 cp orig_cb_full/darius.conf bug_vey_164_08.conf
