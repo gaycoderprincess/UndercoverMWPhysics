@@ -269,7 +269,6 @@ std::vector<float> UNDERCOVER_YawControl = { 0.1, 0.2, 0.65, 1 };
 #include "decomp/AverageWindow.h"
 #include "decomp/EngineRacer.h"
 #include "decomp/SuspensionRacer.h"
-#include "MWCarTuning.cpp"
 #include "decomp/MWChassis.cpp"
 #include "decomp/MWRaceEngine.cpp"
 #include "decomp/MWTiptronic.cpp"
@@ -350,7 +349,7 @@ void DebugMenu() {
 			DrawMenuOption(std::format("IsGearChanging {}", pEngine->IsGearChanging()));
 			DrawMenuOption(std::format("mEngineBraking {}", pEngine->mEngineBraking));
 			DrawMenuOption(std::format("IDLE {:.2f}", pEngine->mCarInfo.GetLayout()->IDLE));
-			DrawMenuOption(std::format("TORQUE.size() {}", GetMWCarData(pEngine)->TORQUE.size()));
+			DrawMenuOption(std::format("TORQUE.size() {}", pEngine->mMWInfo.TORQUE.size()));
 			DrawMenuOption(std::format("mSuspension {:X}", (uintptr_t)pEngine->mSuspension));
 			DrawMenuOption(std::format("mIInput {:X}", (uintptr_t)pEngine->mIInput));
 			DrawMenuOption(std::format("GetControlGas {}", pEngine->mIInput->GetControlGas()));

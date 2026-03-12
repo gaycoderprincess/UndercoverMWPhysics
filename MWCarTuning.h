@@ -196,7 +196,7 @@ MWCarTuning* LoadCarTuningFromFile(std::string configCarName) {
 	return &aCarTunings[aCarTunings.size()-1];
 }
 
-MWCarTuning* GetCarTuning(const char* model) {
+MWCarTuning* GetCarTuning(const std::string& model) {
 	for (auto& tuning : aCarTunings) {
 		if (tuning.carName == model) return &tuning;
 	}
@@ -207,13 +207,157 @@ MWCarTuning* GetCarTuning(const char* model) {
 	return &aCarTunings[0];
 }
 
-class SuspensionRacer;
-class EngineRacer;
+#define TUNED_VALUE(value, delta) tmp.value = std::lerp(base->value, top->value, delta);
 
-#ifdef SUSPENSIONRACER_ELISE_TEST
-MWCarTuning* GetMWCarData(const SuspensionRacer* pThis);
-MWCarTuning* GetMWCarData(const EngineRacer* pThis);
-#else
-Attrib::Gen::car_tuning::_LayoutStruct* GetMWCarData(const SuspensionRacer* pThis);
-Attrib::Gen::car_tuning::_LayoutStruct* GetMWCarData(const EngineRacer* pThis);
-#endif
+MWCarTuning GetLerpedCarTuning(const std::string& model, float brake, float drivetrain, float engine, float induction, float nitro, float suspension, float tire) {
+	auto base = GetCarTuning(model);
+	auto top = GetCarTuning(model + "_top");
+	if (!top && !base) {
+		WriteLog(std::format("Failed to find tunings for {}", model));
+		return {};
+	}
+	if (!top) return *base;
+	if (!base) return *top;
+
+	if (base->YAW_CONTROL.size() != top->YAW_CONTROL.size() || base->GEAR_RATIO.size() != top->GEAR_RATIO.size() || base->TORQUE.size() != top->TORQUE.size() || base->ENGINE_BRAKING.size() != top->ENGINE_BRAKING.size()) {
+		WriteLog(std::format("Mismatched tunings for {}", model));
+		__debugbreak();
+	}
+
+	auto tmp = *base;
+
+	brake = UMath::Clamp(brake, 0.0, 1.0);
+	drivetrain = UMath::Clamp(drivetrain, 0.0, 1.0);
+	engine = UMath::Clamp(engine, 0.0, 1.0);
+	induction = UMath::Clamp(induction, 0.0, 1.0);
+	nitro = UMath::Clamp(nitro, -1.0, 1.0);
+	suspension = UMath::Clamp(suspension, 0.0, 1.0);
+	tire = UMath::Clamp(tire, 0.0, 1.0);
+
+	// brakes
+	TUNED_VALUE(BRAKE_LOCK.Front, brake);
+	TUNED_VALUE(BRAKE_LOCK.Rear, brake);
+	TUNED_VALUE(BRAKES.Front, brake);
+	TUNED_VALUE(BRAKES.Rear, brake);
+	TUNED_VALUE(EBRAKE, brake);
+
+	// chassis
+	TUNED_VALUE(AERO_CG, suspension);
+	TUNED_VALUE(AERO_COEFFICIENT, suspension);
+	TUNED_VALUE(DRAG_COEFFICIENT, suspension);
+	TUNED_VALUE(FRONT_WEIGHT_BIAS, suspension);
+	TUNED_VALUE(RENDER_MOTION, suspension);
+	TUNED_VALUE(RIDE_HEIGHT.Front, suspension);
+	TUNED_VALUE(RIDE_HEIGHT.Rear, suspension);
+	TUNED_VALUE(ROLL_CENTER, suspension);
+	TUNED_VALUE(SHOCK_BLOWOUT, suspension);
+	TUNED_VALUE(SHOCK_DIGRESSION.Front, suspension);
+	TUNED_VALUE(SHOCK_DIGRESSION.Rear, suspension);
+	TUNED_VALUE(SHOCK_EXT_STIFFNESS.Front, suspension);
+	TUNED_VALUE(SHOCK_EXT_STIFFNESS.Rear, suspension);
+	TUNED_VALUE(SHOCK_STIFFNESS.Front, suspension);
+	TUNED_VALUE(SHOCK_STIFFNESS.Rear, suspension);
+	TUNED_VALUE(SHOCK_VALVING.Front, suspension);
+	TUNED_VALUE(SHOCK_VALVING.Rear, suspension);
+	TUNED_VALUE(SPRING_PROGRESSION.Front, suspension);
+	TUNED_VALUE(SPRING_PROGRESSION.Rear, suspension);
+	TUNED_VALUE(SPRING_STIFFNESS.Front, suspension);
+	TUNED_VALUE(SPRING_STIFFNESS.Rear, suspension);
+	TUNED_VALUE(SWAYBAR_STIFFNESS.Front, suspension);
+	TUNED_VALUE(SWAYBAR_STIFFNESS.Rear, suspension);
+	TUNED_VALUE(TRAVEL.Front, suspension);
+	TUNED_VALUE(TRAVEL.Rear, suspension);
+
+	// tires
+	TUNED_VALUE(DYNAMIC_GRIP.Front, tire);
+	TUNED_VALUE(DYNAMIC_GRIP.Rear, tire);
+	TUNED_VALUE(GRIP_SCALE.Front, tire);
+	TUNED_VALUE(GRIP_SCALE.Rear, tire);
+	TUNED_VALUE(STATIC_GRIP.Front, tire);
+	TUNED_VALUE(STATIC_GRIP.Rear, tire);
+	TUNED_VALUE(STEERING, tire);
+	for (int i = 0; i < tmp.YAW_CONTROL.size(); i++) {
+		TUNED_VALUE(YAW_CONTROL[i], tire);
+	}
+	TUNED_VALUE(YAW_SPEED, tire);
+
+	// transmission
+	for (int i = 0; i < tmp.GEAR_RATIO.size(); i++) {
+		TUNED_VALUE(GEAR_RATIO[i], drivetrain);
+	}
+	for (int i = 0; i < 3; i++) {
+		TUNED_VALUE(DIFFERENTIAL[i], drivetrain);
+	}
+	for (int i = 0; i < 9; i++) {
+		TUNED_VALUE(GEAR_EFFICIENCY[i], drivetrain);
+	}
+	TUNED_VALUE(TORQUE_CONVERTER, drivetrain);
+	TUNED_VALUE(TORQUE_SPLIT, drivetrain);
+	TUNED_VALUE(CLUTCH_SLIP, drivetrain);
+	TUNED_VALUE(OPTIMAL_SHIFT, drivetrain);
+	TUNED_VALUE(SHIFT_SPEED, drivetrain);
+	TUNED_VALUE(FINAL_GEAR, drivetrain);
+
+	// engine
+	for (int i = 0; i < tmp.TORQUE.size(); i++) {
+		TUNED_VALUE(TORQUE[i], engine);
+	}
+	TUNED_VALUE(SPEED_LIMITER[0], engine);
+	TUNED_VALUE(SPEED_LIMITER[1], engine);
+	for (int i = 0; i < tmp.ENGINE_BRAKING.size(); i++) {
+		TUNED_VALUE(ENGINE_BRAKING[i], engine);
+	}
+	TUNED_VALUE(FLYWHEEL_MASS, engine);
+	TUNED_VALUE(MAX_RPM, engine);
+	TUNED_VALUE(RED_LINE, engine);
+	TUNED_VALUE(IDLE, engine);
+
+	// nos
+	if (nitro < 0.0) {
+		tmp.FLOW_RATE = 0.0;
+		tmp.NOS_CAPACITY = 40.0;
+		tmp.NOS_DISENGAGE = 2.0;
+		tmp.RECHARGE_MAX = 0.0;
+		tmp.RECHARGE_MAX_SPEED = 0.0;
+		tmp.RECHARGE_MIN = 0.0;
+		tmp.RECHARGE_MIN_SPEED = 0.0;
+		tmp.TORQUE_BOOST = 0.0;
+	}
+	else {
+		tmp.FLOW_RATE = 3.0;
+		tmp.NOS_CAPACITY = std::lerp(2.5, 5.0, nitro);
+		tmp.NOS_DISENGAGE = 2.0;
+		tmp.RECHARGE_MAX = 30;
+		tmp.RECHARGE_MAX_SPEED = 100;
+		tmp.RECHARGE_MIN = 50;
+		tmp.RECHARGE_MIN_SPEED = 50;
+		tmp.TORQUE_BOOST = std::lerp(0.75, 1.0, nitro);
+	}
+
+	// induction
+	TUNED_VALUE(LOW_BOOST, induction);
+	TUNED_VALUE(SPOOL_TIME_DOWN, induction);
+	TUNED_VALUE(VACUUM, induction);
+	TUNED_VALUE(SPOOL, induction);
+	TUNED_VALUE(SPOOL_TIME_UP, induction);
+	TUNED_VALUE(PSI, induction);
+	TUNED_VALUE(HIGH_BOOST, induction);
+
+	return tmp;
+}
+
+MWCarTuning GetLerpedCarTuning(const std::string& model, const VehicleCustomizations* cust) {
+	if (cust) {
+		float brake = (cust->InstalledParts[CARSLOTID_BRAKE_PACKAGE].kit_num + 1) / 4.0;
+		float drivetrain = (cust->InstalledParts[CARSLOTID_DRIVETRAIN_PACKAGE].kit_num + 1) / 4.0;
+		float engine = (cust->InstalledParts[CARSLOTID_ENGINE_PACKAGE].kit_num + 1) / 4.0;
+		float induction = (cust->InstalledParts[CARSLOTID_FORCED_INDUCTION_PACKAGE].kit_num + 1) / 4.0;
+		float nitro = cust->InstalledParts[CARSLOTID_NITROUS_PACKAGE].kit_num / 3.0;
+		float suspension = (cust->InstalledParts[CARSLOTID_SUSPENSION_PACKAGE].kit_num + 1) / 4.0;
+		float tire = (cust->InstalledParts[CARSLOTID_TIRE_PACKAGE].kit_num + 1) / 4.0;
+		return GetLerpedCarTuning(model, brake, drivetrain, engine, induction, nitro, suspension, tire);
+	}
+	else {
+		return GetLerpedCarTuning(model, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+	}
+}

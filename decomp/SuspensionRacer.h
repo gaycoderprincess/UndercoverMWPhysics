@@ -230,8 +230,8 @@ public:
 
 	class Tire : public MWWheel {
 	public:
-		Tire(float radius, int index, const Attrib::Gen::car_tuning *specs, IVehicle* vehicle)
-				: MWWheel(1), mRadius(UMath::Max(radius, 0.1f)), mWheelIndex(index), mAxleIndex(index >> 1), mSpecs(specs), mVehicle(vehicle), mBrake(0.0f),
+		Tire(float radius, int index, const Attrib::Gen::car_tuning *specs, MWCarTuning* mwSpecs, IVehicle* vehicle)
+				: MWWheel(1), mRadius(UMath::Max(radius, 0.1f)), mWheelIndex(index), mAxleIndex(index >> 1), mSpecs(specs), mMWSpecs(mwSpecs), mVehicle(vehicle), mBrake(0.0f),
 				  mEBrake(0.0f), mAV(0.0f), mLoad(0.0f), mLateralForce(0.0f), mLongitudeForce(0.0f), mDriveTorque(0.0f), mBrakeTorque(0.0f), mLateralBoost(1.0f),
 				  mTractionBoost(1.0f), mSlip(0.0f), mLastTorque(0.0f), mRoadSpeed(0.0f), mAngularAcc(0.0f), mTraction(1.0f), mBottomOutTime(0.0f),
 				  mSlipAngle(0.0f), mTractionCircle(UMath::Vector2(1.0f, 1.0f)), mMaxSlip(0.5f), mGripBoost(1.0f), mDriftFriction(1.0f), mLateralSpeed(0.0f),
@@ -381,6 +381,7 @@ public:
 		float mLastTorque;
 		const int mWheelIndex;
 		float mRoadSpeed;
+		const MWCarTuning *mMWSpecs;
 		const Attrib::Gen::car_tuning *mSpecs;
 		IVehicle *mVehicle;
 		float mAngularAcc;
@@ -403,6 +404,7 @@ public:
 	float mJumpTime;
 	float mJumpAlititude;
 	float mTireHeat;
+	MWCarTuning mMWInfo;
 	Attrib::Gen::car_tuning mCarInfo;
 	IEngine *mEngine;
 	IEngineDamage *mEngineDamage;
@@ -484,11 +486,11 @@ public:
 	}
 
 	bool RearWheelDrive() {
-		return GetMWCarData(this)->TORQUE_SPLIT < 1.0f;
+		return mMWInfo.TORQUE_SPLIT < 1.0f;
 	}
 
 	bool FrontWheelDrive() {
-		return GetMWCarData(this)->TORQUE_SPLIT > 0.0f;
+		return mMWInfo.TORQUE_SPLIT > 0.0f;
 	}
 
 	bool IsDriveWheel(unsigned int i) {
