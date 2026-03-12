@@ -1864,16 +1864,15 @@ void SuspensionRacer::MatchSpeed(float speed) {
 }
 
 void SuspensionRacer::dtor(char a2) {
-	GetIChassis()->mCOMObject->Remove(GetIChassis());
-	return;
-
 	SUSPENSIONRACER_FUNCTION_LOG("dtor");
+
+	GetIChassis()->mCOMObject->Remove(GetIChassis());
 
 	delete mMWInfo;
 
-	if (mCarInfo.mCollection) {
-		Attrib::Collection::Release(mCarInfo.mCollection, 0);
-	}
+	//if (mCarInfo.mCollection) {
+	//	Attrib::Collection::Release(mCarInfo.mCollection, 0);
+	//}
 
 	for (int i = 0; i < 4; ++i) {
 		WriteLog("delete mTires[i]");

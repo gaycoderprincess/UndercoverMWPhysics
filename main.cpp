@@ -573,8 +573,6 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 
 			ChloeMenuLib::RegisterMenu("Debug Menu", &DebugMenu);
 
-			LoadCarTuningFromFile("orig/bmwm3gtre46_top");
-
 			//NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x73F88D, 0x6DB670);
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73F830, &ChassisHumanConstructHooked);
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73EBF0, &EngineRacerConstructHooked); // Engine, this is what the player uses

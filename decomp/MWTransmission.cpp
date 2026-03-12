@@ -132,7 +132,7 @@ namespace MWTransmission {
 	float __thiscall GetPerfectLaunchError(uintptr_t ptr) {
 		ITRANSMISSION_FUNCTION_LOG("GetPerfectLaunchError");
 		auto pThis = GetEngineRacer(ptr);
-		return 0.0; // todo
+		return 1.0; // todo
 	}
 	
 	void* NewVTable[] = {

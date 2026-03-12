@@ -477,15 +477,12 @@ class EngineRacer : public VehicleBehavior {
 	}
 
 	bool IsEngineBraking() {
-		ENGINERACER_FUNCTION_LOG("IsEngineBraking");
 		return mEngineBraking;
 	}
 	bool IsShiftingGear() {
-		ENGINERACER_FUNCTION_LOG("IsShiftingGear");
 		return mGearShiftTimer > 0.0f;
 	}
 	bool IsReversing() const {
-		ENGINERACER_FUNCTION_LOG("IsReversing");
 		return mGear == G_REVERSE;
 	}
 
@@ -541,7 +538,6 @@ class EngineRacer : public VehicleBehavior {
 
 	ShiftStatus OnGearChange(GearID gear);
 	bool UseRevLimiter() const {
-		ENGINERACER_FUNCTION_LOG("UseRevLimiter");
 		return true;
 	}
 	void DoECU();

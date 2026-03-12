@@ -204,7 +204,7 @@ MWCarTuning* GetCarTuning(const std::string& model) {
 		return tuning;
 	}
 	WriteLog(std::format("Failed to find tunings for {}", model));
-	return &aCarTunings[0];
+	return nullptr;
 }
 
 #define TUNED_VALUE(value, delta) tmp.value = std::lerp(base->value, top->value, delta);
@@ -213,8 +213,8 @@ MWCarTuning GetLerpedCarTuning(const std::string& model, float brake, float driv
 	auto base = GetCarTuning(model);
 	auto top = GetCarTuning(model + "_top");
 	if (!top && !base) {
-		WriteLog(std::format("Failed to find tunings for {}", model));
-		return {};
+		MessageBoxA(nullptr, std::format("Failed to find tunings for {}", model).c_str(), "nya?!~", MB_ICONERROR);
+		__debugbreak();
 	}
 	if (!top) return *base;
 	if (!base) return *top;

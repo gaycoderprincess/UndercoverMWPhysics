@@ -120,22 +120,22 @@ void EngineRacer::Create(const BehaviorParams &bp) {
 }
 
 void EngineRacer::dtor(char a2) {
+	ENGINERACER_FUNCTION_LOG("dtor");
+
 	GetIEngine()->mCOMObject->Remove(GetIEngine());
 	GetITransmission()->mCOMObject->Remove(GetITransmission());
 	GetIInductable()->mCOMObject->Remove(GetIInductable());
 	GetITiptronic()->mCOMObject->Remove(GetITiptronic());
 	GetIRaceEngine()->mCOMObject->Remove(GetIRaceEngine());
 	GetIEngineDamage()->mCOMObject->Remove(GetIEngineDamage());
-	return;
 
-	ENGINERACER_FUNCTION_LOG("dtor");
 	//IAttributeable::UnRegister(this); // todo
 
 	delete mMWInfo;
 
-	if (mCarInfo.mCollection) {
-		Attrib::Collection::Release(mCarInfo.mCollection, 0);
-	}
+	//if (mCarInfo.mCollection) {
+	//	Attrib::Collection::Release(mCarInfo.mCollection, 0);
+	//}
 
 	if ((a2 & 1) != 0) {
 		WriteLog("gFastMem.Free");
@@ -205,7 +205,6 @@ void EngineRacer::Reset() {
 }
 
 float EngineRacer::GetEngineTorque(float rpm) const {
-	ENGINERACER_FUNCTION_LOG("GetEngineTorque");
 	float ftlbs = Physics::Info::Torque(mMWInfo, rpm);
 	float result = FTLB2NM(ftlbs);
 	result *= 1.0f + mInductionBoost;
@@ -271,7 +270,6 @@ void EngineRacer::MatchSpeed(float speed) {
 
 // Credits: Brawltendo
 float EngineRacer::GetBrakingTorque(float engine_torque, float rpm) const {
-	ENGINERACER_FUNCTION_LOG("GetBrakingTorque");
 	float torque = engine_torque;
 	unsigned int numpts = mMWInfo->ENGINE_BRAKING.size();
 	if (numpts > 1) {
@@ -602,8 +600,6 @@ float Engine_SmoothRPM(bool is_shifting, GearID gear, float dT, float old_rpm, f
 
 // Credits: Brawltendo
 void EngineRacer::DoECU() {
-	ENGINERACER_FUNCTION_LOG("DoECU");
-
 	if (GetGear() <= G_NEUTRAL) {
 		return;
 	}
@@ -750,8 +746,6 @@ float EngineRacer::DoThrottle(float dT) {
 
 // Credits: Brawltendo
 void EngineRacer::DoShifting(float dT) {
-	ENGINERACER_FUNCTION_LOG("DoShifting");
-
 	auto automatic = mIInput && mIInput->IsAutomaticShift();
 	if (mTransmissionOverride != OVERRIDE_NONE) {
 		automatic = mTransmissionOverride == OVERRIDE_AUTOMATIC;
