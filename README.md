@@ -104,7 +104,7 @@ You should be able to build the project now in CLion.
 - Honda Civic del Sol - Chevrolet Cobalt SS (Most Wanted)
 - Honda NSX - Mazda RX-7 (Most Wanted)
 - Honda NSX-R GT - Mazda RX-7 (Most Wanted)
-- HSV GTS-R - Pontiac GTO (Most Wanted)
+- HSV GTS-R - Vauxhall Monaro VXR (Most Wanted)
 - Italidesign Gallardo Superleggera - Lamborghini Gallardo (Most Wanted)
 - Lexus LFA - Audi R8 (Carbon)
 - Mercedes-Benz SLR Stirling Moss - Mercedes-Benz SLR (Most Wanted)
