@@ -12,8 +12,6 @@ Massive thanks to everyone involved with [dbalatoni13's MW reverse engineering p
 
 ## Known issues
 
-- The clutch might occasionally get stuck and leave you unable to drive, release and re-press the gas pedal to fix it
-- Launching at race starts might not work if you're fully revved when the counter hits 0
 - Skidmarks and tire smoke aren't 100% accurate
 
 ## Building
