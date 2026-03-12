@@ -1,3 +1,28 @@
+#pragma once
+#ifndef SUSPENSIONRACER_H
+#define SUSPENSIONRACER_H
+
+#include "../framework.h"
+#include "AverageWindow.h"
+#include "../UMathEx.h"
+#include "../MWCarTuning.h"
+
+inline float UNDERCOVER_BrakesAtValue = 0.0;
+inline float UNDERCOVER_StaticGripAtValue = 0.0;
+inline float UNDERCOVER_RollCenterAtValue = 0.0;
+inline float UNDERCOVER_AeroCGAtValue = 0.0;
+inline float UNDERCOVER_AeroCoeffAtValue = 0.0;
+inline float UNDERCOVER_SuspensionAtValue = 0.0;
+inline float UNDERCOVER_SteeringAtValue = 0.0;
+
+inline float fHackLateralBoost = 1.0;
+inline float fHackFrictionBoost = 1.0;
+inline float fHackLateralForce = 1.0;
+inline float fHackMaxTraction = 1.0;
+inline float fHackGripScale = 1.0;
+inline float fHackDynamicGrip = 1.0;
+inline float fHackStaticGrip = 1.0;
+
 class MWWheel {
 public:
 	WWorldPos mWorldPos;
@@ -419,7 +444,7 @@ public:
 	Burnout mBurnOut;
 	Steering mSteering;
 	Tire *mTires[4];
-	IChassis tmpChassis;
+	uint8_t tmpChassis[8];
 
 	struct State {
 		UMath::Matrix4 matrix;
@@ -476,22 +501,22 @@ public:
 	};
 
 	ISimable* GetOwner() {
-		return Behavior::mIOwner;
+		return mIOwner;
 	}
 
 	IVehicle* GetVehicle() {
 		return mVehicle;
 	}
 
-	bool RearWheelDrive() {
+	bool RearWheelDrive() const {
 		return GetMWCarData(this)->TORQUE_SPLIT < 1.0f;
 	}
 
-	bool FrontWheelDrive() {
+	bool FrontWheelDrive() const {
 		return GetMWCarData(this)->TORQUE_SPLIT > 0.0f;
 	}
 
-	bool IsDriveWheel(unsigned int i) {
+	bool IsDriveWheel(unsigned int i) const {
 		return (IsRear(i) && RearWheelDrive()) || (IsFront(i) && FrontWheelDrive());
 	}
 
@@ -505,26 +530,29 @@ public:
 
 	// hack around this enough so the compiler doesn't complain about the vtable being missing
 	IChassis* GetIChassis() {
-		auto ptr = (uintptr_t)this;
-		ptr += offsetof(SuspensionRacer, tmpChassis);
-		return (IChassis*)ptr;
+		auto addr = (uintptr_t)(this + offsetof(SuspensionRacer, tmpChassis));
+		return (IChassis*)addr;
 	}
 
-	void OnOwnerAttached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerAttached"); }
-	void OnOwnerDetached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerDetached"); }
-	void OnPause() { FUNCTION_LOG("OnPause");  }
-	void OnUnPause() { FUNCTION_LOG("OnUnPause");  }
-	void OnDebugDraw() { FUNCTION_LOG("OnDebugDraw");  }
-	int GetPriority() { FUNCTION_LOG("GetPriority"); return mPriority; }
-	float GetDownCoefficient(float f) { FUNCTION_LOG("GetDownCoefficient"); return GetIChassis()->GetDownCoefficient(); }
-	float GetDynamicRideHeight(unsigned int idx, State*) { FUNCTION_LOG("GetDynamicRideHeight"); return GetRideHeight(idx); }
-	float GetDriftValue() { FUNCTION_LOG("GetDriftValue"); return 0.0; } // todo
-	void ApplyVehicleEntryForces(bool enteringVehicle, const UMath::Vector3 *pos, bool calledfromEvent) { FUNCTION_LOG("ApplyVehicleEntryForces");  }
 
-	void dtor(char a2);
-	void Reset();
-	float CalculateUndersteerFactor();
-	float CalculateOversteerFactor();
+	virtual bool OnService(void* a1, void* a2) { return reinterpret_cast<bool(__thiscall*)(void*, void*, void*)>(0x69F570)(this, a1, a2); }
+	virtual void dtor(char a2);
+	virtual void Reset();
+	virtual int GetPriority() { FUNCTION_LOG("GetPriority"); return mPriority; }
+	virtual void OnOwnerAttached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerAttached"); }
+	virtual void OnOwnerDetached(IAttachable* pOther) { FUNCTION_LOG("OnOwnerDetached"); }
+	virtual void OnTaskSimulate(float dT);
+	virtual void OnBehaviorChange(const UCrc32& mechanic);
+	virtual void OnPause() { FUNCTION_LOG("OnPause");  }
+	virtual void OnUnPause() { FUNCTION_LOG("OnUnPause");  }
+	virtual void OnDebugDraw() { FUNCTION_LOG("OnDebugDraw");  }
+	virtual float CalculateUndersteerFactor();
+	virtual float CalculateOversteerFactor();
+	virtual float GetDownCoefficient(float f) { FUNCTION_LOG("GetDownCoefficient"); return GetIChassis()->GetDownCoefficient(); }
+	virtual float GetDynamicRideHeight(unsigned int idx, State*) { FUNCTION_LOG("GetDynamicRideHeight"); return GetRideHeight(idx); }
+	virtual float GetDriftValue() { FUNCTION_LOG("GetDriftValue"); return 0.0; } // todo
+	virtual void ApplyVehicleEntryForces(bool enteringVehicle, const UMath::Vector3 *pos, bool calledfromEvent) { FUNCTION_LOG("ApplyVehicleEntryForces");  }
+
 	void MatchSpeed(float speed);
 	Meters GetRideHeight(unsigned int idx) const;
 	void DoDrifting(const State &state);
@@ -547,8 +575,7 @@ public:
 	void DoAerodynamics(const State &state, float drag_pct, float aero_pct, float aero_front_z, float aero_rear_z, const Physics::Tunings *tunings);
 
 	void CreateTires();
-	void OnTaskSimulate(float dT);
-	void OnBehaviorChange(const UCrc32 &mechanic);
+	
 	void Create(const BehaviorParams& bp);
 	void DoJumpStabilizer(const State& bp);
 	void DoDriveForces(State &state);
@@ -558,10 +585,10 @@ public:
 		//return GetVehicle()->GetTunings();
 	}
 
-	const UMath::Vector3 &GetWheelPos(unsigned int i) const {
+	const UMath::Vector3& GetWheelPos(unsigned int i) const {
 		return mTires[i]->GetPosition();
 	}
-	const UMath::Vector3 &GetWheelLocalPos(unsigned int i) const {
+	const UMath::Vector3& GetWheelLocalPos(unsigned int i) const {
 		return mTires[i]->GetLocalArm();
 	}
 	const float GetWheelRoadHeight(unsigned int i) const {
@@ -570,7 +597,7 @@ public:
 	float GetCompression(unsigned int i) const {
 		return mTires[i]->GetCompression();
 	}
-	const UMath::Vector4 &GetWheelRoadNormal(unsigned int i) const {
+	const UMath::Vector4& GetWheelRoadNormal(unsigned int i) const {
 		return mTires[i]->GetNormal();
 	}
 	bool IsWheelOnGround(unsigned int i) const {
@@ -579,7 +606,7 @@ public:
 	const SimSurface* GetWheelRoadSurface(unsigned int i) const {
 		return mTires[i]->GetSurface();
 	}
-	const UMath::Vector3 &GetWheelVelocity(unsigned int i) const {
+	const UMath::Vector3& GetWheelVelocity(unsigned int i) const {
 		return mTires[i]->GetVelocity();
 	}
 	int GetNumWheelsOnGround() const {
@@ -594,4 +621,24 @@ public:
 	float GetWheelSlipAngle(unsigned int idx) const {
 		return mTires[idx]->GetSlipAngle();
 	}
+
+	uintptr_t* GetVT()
+	{
+		return *reinterpret_cast<uintptr_t**>(this);
+	}
+
+	void SetVT(uintptr_t* vt)
+	{
+		*reinterpret_cast<uintptr_t**>(this) = vt;
+	}
+
+	void* operator new(size_t size);
+
+	SuspensionRacer()
+	{
+	}
 };
+
+extern SuspensionRacer::State LastChassisState;
+
+#endif

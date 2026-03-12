@@ -42,15 +42,17 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetExt>.asi</TargetExt>
+    <TargetName>NFSUCMWPhysics_gcp</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetExt>.asi</TargetExt>
+    <TargetName>NFSUCMWPhysics_gcp</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;UNDERCOVERMWPHYSICS_EXPORTS;NYA_COMMON_NO_D3D;SUSPENSIONRACER_ELISE_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\nya-common;$(SolutionDir)..\nya-common\3rdparty;$(SolutionDir)..\nya-common\3rdparty\imgui;$(SolutionDir)..\nya-common\3rdparty\imgui_dx8;$(SolutionDir)..\nya-common-nfsuc;$(SolutionDir)..\nya-common-nfsuc\types;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\nya-common;$(SolutionDir)..\nya-common\3rdparty;$(SolutionDir)..\nya-common\3rdparty\imgui;$(SolutionDir)..\nya-common\3rdparty\imgui_dx8;$(SolutionDir)..\nya-common-nfsuc;$(SolutionDir)..\nya-common-nfsuc\types;$(SolutionDir)..\CwoeeMenuLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeaderFile />
@@ -63,11 +65,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(TargetPath)" "$(NFSUC)scripts"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;UNDERCOVERMWPHYSICS_EXPORTS;NYA_COMMON_NO_D3D;SUSPENSIONRACER_ELISE_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\nya-common;$(SolutionDir)..\nya-common\3rdparty;$(SolutionDir)..\nya-common\3rdparty\imgui;$(SolutionDir)..\nya-common\3rdparty\imgui_dx8;$(SolutionDir)..\nya-common-nfsuc;$(SolutionDir)..\nya-common-nfsuc\types;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\nya-common;$(SolutionDir)..\nya-common\3rdparty;$(SolutionDir)..\nya-common\3rdparty\imgui;$(SolutionDir)..\nya-common\3rdparty\imgui_dx8;$(SolutionDir)..\nya-common-nfsuc;$(SolutionDir)..\nya-common-nfsuc\types;$(SolutionDir)..\CwoeeMenuLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeaderFile />
@@ -82,19 +87,25 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(TargetPath)" "$(NFSUC)scripts"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="decomp\MWChassis.cpp" />
     <ClCompile Include="decomp\SuspensionRacer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MWCarTuning.cpp" />
+    <ClCompile Include="TableEx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="decomp\AverageWindow.h" />
     <ClInclude Include="decomp\ConversionUtil.hpp" />
     <ClInclude Include="decomp\SuspensionRacer.h" />
+    <ClInclude Include="framework.h" />
     <ClInclude Include="mw.h" />
     <ClInclude Include="MWCarTuning.h" />
+    <ClInclude Include="UMathEx.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

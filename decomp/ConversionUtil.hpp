@@ -1,3 +1,11 @@
+#ifndef CONVERSIONUTIL_HPP
+#define CONVERSIONUTIL_HPP
+
+#include "../framework.h"
+
+#include <cmath>
+#include <numbers>
+
 // Credit: Brawltendo
 
 typedef float Angle;
@@ -86,3 +94,5 @@ inline Hp NM2HP(const Nm _nm, const Rpm _rpm) {
 inline Mps KPH2MPS(Kph x) {
     return x / 3.6f;
 }
+
+#endif

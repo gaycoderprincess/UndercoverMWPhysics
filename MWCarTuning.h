@@ -1,10 +1,19 @@
-float UNDERCOVER_BrakesAtValue = 0.0;
-float UNDERCOVER_StaticGripAtValue = 0.0;
-float UNDERCOVER_RollCenterAtValue = 0.0;
-float UNDERCOVER_AeroCGAtValue = 0.0;
-float UNDERCOVER_AeroCoeffAtValue = 0.0;
-float UNDERCOVER_SuspensionAtValue = 0.0;
-float UNDERCOVER_SteeringAtValue = 0.0;
+#pragma once
+#ifndef MWCARTUNING_H
+#define MWCARTUNING_H
+
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning(disable: 4244) // conversion from 'const double' to 'T', possible loss of data
+#endif
+
+#include "framework.h"
+#include <filesystem>
+#include <toml++/toml.hpp>
+//#include "decomp/SuspensionRacer.h"
+
+class SuspensionRacer;
+
 
 struct MWCarTuning {
 	std::string carName;
@@ -62,8 +71,8 @@ struct MWCarTuning {
 	// pvehicle
 	float TENSOR_SCALE[3];
 };
-std::vector<MWCarTuning> aCarTunings;
-MWCarTuning* LoadCarTuningFromFile(std::string configCarName) {
+inline std::vector<MWCarTuning> aCarTunings;
+inline MWCarTuning* LoadCarTuningFromFile(std::string configCarName) {
 	DLLDirSetter _setdir;
 
 	if (configCarName.ends_with(".conf")) {
@@ -147,7 +156,7 @@ MWCarTuning* LoadCarTuningFromFile(std::string configCarName) {
 	return &aCarTunings[aCarTunings.size()-1];
 }
 
-MWCarTuning* GetCarTuning(const char* model) {
+inline MWCarTuning* GetCarTuning(const char* model) {
 	for (auto& tuning : aCarTunings) {
 		if (tuning.carName == model) return &tuning;
 	}
@@ -193,7 +202,7 @@ MWCarTuning* GetCarTuning(const char* model) {
 // vol_gol_r32_06 - gti_top
 // vol_sci_stk_08 - cobaltss_top
 
-void InitMWCarTunings() {
+inline void InitMWCarTunings() {
 	{
 		MWCarTuning tmp;
 		tmp.carName = "elise";
@@ -286,10 +295,16 @@ void InitMWCarTunings() {
 	}
 }
 
-class SuspensionRacer;
-
 #ifdef SUSPENSIONRACER_ELISE_TEST
 MWCarTuning* GetMWCarData(const SuspensionRacer* pThis);
+MWCarTuning* GetMWCarDataFromTire(const void* pThis);
 #else
 Attrib::Gen::car_tuning::_LayoutStruct* GetMWCarData(const SuspensionRacer* pThis);
+Attrib::Gen::car_tuning::_LayoutStruct* GetMWCarData(const SuspensionRacer::Tire* pThis);
+#endif
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
+
 #endif

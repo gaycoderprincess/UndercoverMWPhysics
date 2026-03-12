@@ -1,6 +1,16 @@
-float GetSimTimeNew() {
-	return Sim::GetTime();
-}
+#include "SuspensionRacer.h"
+#include "MWChassis.h"
+#include "../MWCarTuning.h"
+
+auto cartuning_LookupKey = (uint32_t(__thiscall*)(Attrib::Gen::car_tuning*, const ISimable*, int))0x721E20;
+auto ctor_cartuning = (void(__thiscall*)(Attrib::Gen::car_tuning*, uint32_t))0x721CB0;
+
+namespace VehicleSystem {
+	float ENABLE_ROLL_STOPS_THRESHOLD = 0.2f;
+};
+
+
+std::vector<float> UNDERCOVER_YawControl = { 0.1, 0.2, 0.65, 1 };
 
 namespace Physics {
 	namespace Info {
@@ -154,11 +164,11 @@ Newtons SuspensionRacer::Tire::ComputeLateralForce(float load, float slip_angle)
 	load *= LoadFactor;
 
 	if (slip_angle_table > 5) {
-		return (GetMWCarData(this)->GRIP_SCALE.At(mAxleIndex) * NewCorneringScale) * mGripBoost * GripFactor * LoadSensitivityTable[6]->GetValue(load);
+		return (GetMWCarDataFromTire(this)->GRIP_SCALE.At(mAxleIndex) * NewCorneringScale) * mGripBoost * GripFactor * LoadSensitivityTable[6]->GetValue(load);
 	} else {
 		float low = LoadSensitivityTable[slip_angle_table]->GetValue(load);
 		float high = LoadSensitivityTable[slip_angle_table + 1]->GetValue(load);
-		return (GetMWCarData(this)->GRIP_SCALE.At(mAxleIndex) * NewCorneringScale) * mGripBoost * GripFactor * (extra * (high - low) + low);
+		return (GetMWCarDataFromTire(this)->GRIP_SCALE.At(mAxleIndex) * NewCorneringScale) * mGripBoost * GripFactor * (extra * (high - low) + low);
 	}
 }
 
@@ -186,8 +196,8 @@ float EBrakingTorque = 10.0f;
 
 // Credits: Brawltendo
 void SuspensionRacer::Tire::CheckForBrakeLock(float ground_force) {
-	const float brake_spec = GetMWCarData(this)->BRAKE_LOCK.At(mAxleIndex) * FTLB2NM(GetMWCarData(this)->BRAKES.At(mAxleIndex).GetValue(UNDERCOVER_BrakesAtValue)) * BrakingTorque;
-	const float ebrake_spec = FTLB2NM(GetMWCarData(this)->EBRAKE.GetValue(UNDERCOVER_BrakesAtValue)) * EBrakingTorque;
+	const float brake_spec = GetMWCarDataFromTire(this)->BRAKE_LOCK.At(mAxleIndex) * FTLB2NM(GetMWCarDataFromTire(this)->BRAKES.At(mAxleIndex).GetValue(UNDERCOVER_BrakesAtValue)) * BrakingTorque;
+	const float ebrake_spec = FTLB2NM(GetMWCarDataFromTire(this)->EBRAKE.GetValue(UNDERCOVER_BrakesAtValue)) * EBrakingTorque;
 	static float StaticToDynamicBrakeForceRatio = 1.2f;
 	static float BrakeLockAngularVelocityFactor = 100.0f;
 
@@ -242,8 +252,8 @@ void SuspensionRacer::Tire::UpdateFree(float dT) {
 		mAngularAcc = 0.0f;
 		mAV = 0.0f;
 	} else {
-		const float brake_spec = FTLB2NM(GetMWCarData(this)->BRAKES.At(mAxleIndex).GetValue(UNDERCOVER_BrakesAtValue)) * BrakingTorque;
-		const float ebrake_spec = FTLB2NM(GetMWCarData(this)->EBRAKE.GetValue(UNDERCOVER_BrakesAtValue)) * EBrakingTorque;
+		const float brake_spec = FTLB2NM(GetMWCarDataFromTire(this)->BRAKES.At(mAxleIndex).GetValue(UNDERCOVER_BrakesAtValue)) * BrakingTorque;
+		const float ebrake_spec = FTLB2NM(GetMWCarDataFromTire(this)->EBRAKE.GetValue(UNDERCOVER_BrakesAtValue)) * EBrakingTorque;
 		float bt = mBrake * brake_spec;
 		float ebt = mEBrake * ebrake_spec;
 		ApplyBrakeTorque(mAV > 0.0f ? -bt : bt);
@@ -263,10 +273,10 @@ static const float InvTireForceEllipseRatio = 1.0 / TireForceEllipseRatio;
 
 // Credits: Brawltendo
 float SuspensionRacer::Tire::UpdateLoaded(float lat_vel, float fwd_vel, float body_speed, float load, float dT) {
-	const float brake_spec = FTLB2NM(GetMWCarData(this)->BRAKES.At(mAxleIndex).GetValue(UNDERCOVER_BrakesAtValue)) * BrakingTorque;
-	const float ebrake_spec = FTLB2NM(GetMWCarData(this)->EBRAKE.GetValue(UNDERCOVER_BrakesAtValue)) * EBrakingTorque;
-	const float dynamicgrip_spec = GetMWCarData(this)->DYNAMIC_GRIP.At(mAxleIndex);
-	const float staticgrip_spec = GetMWCarData(this)->STATIC_GRIP.At(mAxleIndex).GetValue(UNDERCOVER_StaticGripAtValue);
+	const float brake_spec = FTLB2NM(GetMWCarDataFromTire(this)->BRAKES.At(mAxleIndex).GetValue(UNDERCOVER_BrakesAtValue)) * BrakingTorque;
+	const float ebrake_spec = FTLB2NM(GetMWCarDataFromTire(this)->EBRAKE.GetValue(UNDERCOVER_BrakesAtValue)) * EBrakingTorque;
+	const float dynamicgrip_spec = GetMWCarDataFromTire(this)->DYNAMIC_GRIP.At(mAxleIndex);
+	const float staticgrip_spec = GetMWCarDataFromTire(this)->STATIC_GRIP.At(mAxleIndex).GetValue(UNDERCOVER_StaticGripAtValue);
 	// free rolling wheel
 	if (mLoad <= 0.0f && !mBrakeLocked) {
 		mAV = fwd_vel / mRadius;
@@ -379,7 +389,7 @@ float SuspensionRacer::Tire::UpdateLoaded(float lat_vel, float fwd_vel, float bo
 	mLongitudeForce *= fDriveGrip;
 
 	if (fwd_vel > 1.0f) {
-		mLongitudeForce -= UMath::Sina(mSlipAngle) * mLateralForce * mDragReduction / GetMWCarData(this)->GRIP_SCALE.At(mAxleIndex);
+		mLongitudeForce -= UMath::Sina(mSlipAngle) * mLateralForce * mDragReduction / GetMWCarDataFromTire(this)->GRIP_SCALE.At(mAxleIndex);
 	} else {
 		mLateralForce *= UMath::Min(UMath::Abs(lat_vel), 1.0f);
 	}
@@ -460,33 +470,14 @@ void SuspensionRacer::OnBehaviorChange(const UCrc32 &mechanic) {
 	WriteLog("OnBehaviorChange finished");
 }
 
-void* NewSuspensionRacerVTable[] = {
-		(void*)0x69F570, // generic OnService
-		(void*)&SuspensionRacer::dtor,
-		(void*)&SuspensionRacer::Reset,
-		(void*)&SuspensionRacer::GetPriority,
-		(void*)&SuspensionRacer::OnOwnerAttached,
-		(void*)&SuspensionRacer::OnOwnerDetached,
-		(void*)&SuspensionRacer::OnTaskSimulate,
-		(void*)&SuspensionRacer::OnBehaviorChange,
-		(void*)&SuspensionRacer::OnPause,
-		(void*)&SuspensionRacer::OnUnPause,
-		(void*)&SuspensionRacer::OnDebugDraw,
-		(void*)&SuspensionRacer::CalculateUndersteerFactor,
-		(void*)&SuspensionRacer::CalculateOversteerFactor,
-		(void*)&SuspensionRacer::GetDownCoefficient,
-		(void*)&SuspensionRacer::GetDynamicRideHeight,
-		(void*)&SuspensionRacer::GetDriftValue,
-		(void*)&SuspensionRacer::ApplyVehicleEntryForces,
-};
 
 void SuspensionRacer::Create(const BehaviorParams& bp) {
 	FUNCTION_LOG("SuspensionRacer::Create");
 
-	*(uintptr_t*)this = (uintptr_t)&NewSuspensionRacerVTable;
 	*(uintptr_t*)&tmpChassis = (uintptr_t)&NewChassisVTable;
-	tmpChassis.mCOMObject = &bp.fowner->Object;
-	bp.fowner->Object.Add(&tmpChassis);
+	IChassis* writeChassis = reinterpret_cast<IChassis*>(&tmpChassis);
+	writeChassis->mCOMObject = &bp.fowner->Object;
+	bp.fowner->Object.Add(writeChassis);
 
 	mJumpTime = 0.0f;
 	mJumpAlititude = 0.0f;
@@ -1053,7 +1044,7 @@ float SuspensionRacer::CalculateSteeringSpeed(State &state) {
 	// using a keyboard will always give you the fastest steering possible
 	float steer_input_speed = (state.steer_input - mSteering.LastInput) / state.time;
 
-	mSteering.InputSpeedCoeffAverage.Record(SteeringInputSpeedCoeffTable.GetValue(std::abs(steer_input_speed)), GetSimTimeNew());
+	mSteering.InputSpeedCoeffAverage.Record(SteeringInputSpeedCoeffTable.GetValue(std::abs(steer_input_speed)), Sim::GetTime());
 
 	// steering speed scales with vehicle forward speed
 	float steer_speed = 180.0f;
@@ -1110,7 +1101,7 @@ float SuspensionRacer::DoHumanSteering(State &state) {
 		newsteer = UMath::Lerp(newsteer, state.steer_input * Tweak_GameBreakerMaxSteer, mGameBreaker);
 	}
 
-	mSteering.InputAverage.Record(mSteering.LastInput, GetSimTimeNew());
+	mSteering.InputAverage.Record(mSteering.LastInput, Sim::GetTime());
 	return DEG2ANGLE(newsteer);
 }
 
@@ -1165,7 +1156,7 @@ float SuspensionRacer::CalcYawControlLimit(float speed) const {
 			float a = UNDERCOVER_YawControl[index1];
 			float b = UNDERCOVER_YawControl[index2];
 			return a + (b - a) * ratio;
-		}
+	}
 #endif
 	}
 	return UNDERCOVER_YawControl[0];
@@ -1356,7 +1347,7 @@ void SuspensionRacer::TuneWheelParams(State &state) {
 	//			suspension_yaw_control_limit += 2.5f;
 	//		}
 	//	}
-	}
+			}
 
 	float max_slip = 0.0f;
 	int max_slip_wheel = 0;
@@ -1465,7 +1456,7 @@ void SuspensionRacer::DoWheelForces(State &state) {
 		ride_extra = tunings->Value[Physics::Tunings::RIDEHEIGHT];
 	}
 
-	float time = GetSimTimeNew();
+	float time = Sim::GetTime();
 	float shock_specs[2];
 	float spring_specs[2];
 	float sway_specs[2];
@@ -1934,4 +1925,9 @@ void SuspensionRacer::Reset() {
 	mSteering.Reset();
 	mBurnOut.Reset();
 	mDrift.Reset();
+}
+
+void* SuspensionRacer::operator new(size_t size)
+{
+	return gFastMem.Alloc(size, nullptr);
 }

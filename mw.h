@@ -1,3 +1,6 @@
+#ifndef MW_H
+#define MW_H
+
 struct UMath::Vector3 {
 	float x;
 	float y;
@@ -97,3 +100,5 @@ struct Wheel {
 	float mSurfaceStick;
 	UMath::Vector4 mIntegral;
 };
+
+#endif

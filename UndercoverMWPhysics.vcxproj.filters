@@ -21,10 +21,13 @@
     <ClCompile Include="MWCarTuning.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="decomp\MWChassis.cpp">
+    <ClCompile Include="decomp\SuspensionRacer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="decomp\SuspensionRacer.cpp">
+    <ClCompile Include="TableEx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="decomp\MWChassis.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -42,6 +45,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="decomp\ConversionUtil.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UMathEx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,3 +1,7 @@
+#pragma once
+#ifndef AVERAGEWINDOW_H
+#define AVERAGEWINDOW_H
+
 class AverageBase {
 public:
 	void *operator new(std::size_t size) {
@@ -223,6 +227,8 @@ private:
 	int NumEntries;           // offset 0x4, size 0x4
 };
 
-template <> void tGraph<float>::Blend(float *dest, float *a, float *b, const float blend_a) {
+template <> inline void tGraph<float>::Blend(float *dest, float *a, float *b, const float blend_a) {
 	*dest = *a * blend_a + *b * (1.0f - blend_a);
 }
+
+#endif //AVERAGEWINDOW_H
