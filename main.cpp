@@ -471,8 +471,7 @@ FactoryEntry __EngineRacerMW;
 FactoryEntry __SuspensionRacerMW;
 
 auto oldctorbase = (void*(__thiscall*)(void*, BehaviorParams*, int))0x6DB670;
-auto oldctorchassis = (void*(__thiscall*)(void*, BehaviorParams*, SuspensionParams*))0x73CEA0;
-SuspensionRacer* ChassisHumanConstructHooked(BehaviorParams* bp, SuspensionParams* sp) {
+SuspensionRacer* ChassisHumanConstruct(BehaviorParams* bp) {
 	auto data = pSuspension = (SuspensionRacer*)gFastMem.Alloc(sizeof(SuspensionRacer), nullptr);
 	memset(data,0,sizeof(SuspensionRacer));
 	oldctorbase(data, bp, 0);
@@ -480,8 +479,7 @@ SuspensionRacer* ChassisHumanConstructHooked(BehaviorParams* bp, SuspensionParam
 	return data;
 }
 
-auto oldctorengine = (void*(__thiscall*)(void*, BehaviorParams*))0x73A9D0;
-EngineRacer* EngineRacerConstructHooked(BehaviorParams* bp) {
+EngineRacer* EngineRacerConstruct(BehaviorParams* bp) {
 	auto data = pEngine = (EngineRacer*)gFastMem.Alloc(sizeof(EngineRacer), nullptr);
 	memset(data,0,sizeof(EngineRacer));
 	oldctorbase(data, bp, 0);
@@ -491,12 +489,12 @@ EngineRacer* EngineRacerConstructHooked(BehaviorParams* bp) {
 
 void RegisterNewBehaviors() {
 	__EngineRacerMW.mSignature.mCRC = Attrib::StringHash32("EngineRacerMW");
-	__EngineRacerMW.mConstructor = (void*)&EngineRacerConstructHooked;
+	__EngineRacerMW.mConstructor = (void*)&EngineRacerConstruct;
 	__EngineRacerMW.mTail = FactoryEntry::mHead;
 	FactoryEntry::mHead = &__EngineRacerMW;
 
 	__SuspensionRacerMW.mSignature.mCRC = Attrib::StringHash32("SuspensionRacerMW");
-	__SuspensionRacerMW.mConstructor = (void*)&ChassisHumanConstructHooked;
+	__SuspensionRacerMW.mConstructor = (void*)&ChassisHumanConstruct;
 	__SuspensionRacerMW.mTail = FactoryEntry::mHead;
 	FactoryEntry::mHead = &__SuspensionRacerMW;
 }

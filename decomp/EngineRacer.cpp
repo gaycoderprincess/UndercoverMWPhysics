@@ -96,7 +96,7 @@ void EngineRacer::Create(const BehaviorParams &bp) {
 	ctor_cartuning(&mCarInfo, cartuning_LookupKey(&mCarInfo, GetOwner(), 0));
 
 	mMWInfo = new MWCarTuning;
-	*mMWInfo = GetLerpedCarTuning(GetVehicle()->GetVehicleName(), GetVehicle()->GetCustomizations());
+	GetLerpedCarTuning(*mMWInfo, GetVehicle()->GetVehicleName(), GetVehicle()->GetCustomizations());
 
 	mRPM = 0.0f;
 	mShiftStatus = SHIFT_STATUS_NONE;

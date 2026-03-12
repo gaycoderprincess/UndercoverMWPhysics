@@ -209,24 +209,41 @@ MWCarTuning* GetCarTuning(const std::string& model) {
 
 #define TUNED_VALUE(value, delta) tmp.value = std::lerp(base->value, top->value, delta);
 
-MWCarTuning GetLerpedCarTuning(const std::string& model, float brake, float drivetrain, float engine, float induction, float nitro, float suspension, float tire) {
+void GetLerpedCarTuning(MWCarTuning& tmp, const std::string& model, float brake, float drivetrain, float engine, float induction, float nitro, float suspension, float tire) {
 	auto base = GetCarTuning(model);
 	auto top = GetCarTuning(model + "_top");
 	if (!top && !base) {
 		MessageBoxA(nullptr, std::format("Failed to find tunings for {}", model).c_str(), "nya?!~", MB_ICONERROR);
 		__debugbreak();
 	}
-	if (!top) return *base;
-	if (!base) return *top;
+	if (!top) {
+		tmp = *base;
+		return;
+	}
+	if (!base) {
+		tmp = *top;
+		return;
+	}
 
 	if (base->YAW_CONTROL.size() != top->YAW_CONTROL.size() || base->GEAR_RATIO.size() != top->GEAR_RATIO.size() || base->TORQUE.size() != top->TORQUE.size() || base->ENGINE_BRAKING.size() != top->ENGINE_BRAKING.size()) {
 		WriteLog(std::format("Mismatched tunings for {}", model));
-		__debugbreak();
+		//MessageBoxA(nullptr, std::format("Mismatched tunings for {}", model).c_str(), "nya?!~", MB_ICONERROR);
+		//__debugbreak();
 	}
+
+	while (base->YAW_CONTROL.size() < top->YAW_CONTROL.size()) { base->YAW_CONTROL.push_back(0.0); }
+	while (base->GEAR_RATIO.size() < top->GEAR_RATIO.size()) { base->GEAR_RATIO.push_back(0.0); }
+	while (base->TORQUE.size() < top->TORQUE.size()) { base->TORQUE.push_back(0.0); }
+	while (base->ENGINE_BRAKING.size() < top->ENGINE_BRAKING.size()) { base->ENGINE_BRAKING.push_back(0.0); }
+
+	while (top->YAW_CONTROL.size() < base->YAW_CONTROL.size()) { top->YAW_CONTROL.push_back(0.0); }
+	while (top->GEAR_RATIO.size() < base->GEAR_RATIO.size()) { top->GEAR_RATIO.push_back(0.0); }
+	while (top->TORQUE.size() < base->TORQUE.size()) { top->TORQUE.push_back(0.0); }
+	while (top->ENGINE_BRAKING.size() < base->ENGINE_BRAKING.size()) { top->ENGINE_BRAKING.push_back(0.0); }
 
 	WriteLog(std::format("GetLerpedCarTuning {} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f} {:.2f}", model, brake, drivetrain, engine, induction, nitro, suspension, tire));
 
-	auto tmp = *base;
+	tmp = *base;
 
 	brake = UMath::Clamp(brake, 0.0, 1.0);
 	drivetrain = UMath::Clamp(drivetrain, 0.0, 1.0);
@@ -344,11 +361,9 @@ MWCarTuning GetLerpedCarTuning(const std::string& model, float brake, float driv
 	TUNED_VALUE(SPOOL_TIME_UP, induction);
 	TUNED_VALUE(PSI, induction);
 	TUNED_VALUE(HIGH_BOOST, induction);
-
-	return tmp;
 }
 
-MWCarTuning GetLerpedCarTuning(const std::string& model, const VehicleCustomizations* cust) {
+void GetLerpedCarTuning(MWCarTuning& out, const std::string& model, const VehicleCustomizations* cust) {
 	if (cust) {
 		float brake = (cust->InstalledParts[CARSLOTID_BRAKE_PACKAGE].kit_num + 1) / 4.0;
 		float drivetrain = (cust->InstalledParts[CARSLOTID_DRIVETRAIN_PACKAGE].kit_num + 1) / 4.0;
@@ -357,9 +372,9 @@ MWCarTuning GetLerpedCarTuning(const std::string& model, const VehicleCustomizat
 		float nitro = cust->InstalledParts[CARSLOTID_NITROUS_PACKAGE].kit_num / 3.0;
 		float suspension = (cust->InstalledParts[CARSLOTID_SUSPENSION_PACKAGE].kit_num + 1) / 4.0;
 		float tire = (cust->InstalledParts[CARSLOTID_TIRE_PACKAGE].kit_num + 1) / 4.0;
-		return GetLerpedCarTuning(model, brake, drivetrain, engine, induction, nitro, suspension, tire);
+		return GetLerpedCarTuning(out, model, brake, drivetrain, engine, induction, nitro, suspension, tire);
 	}
 	else {
-		return GetLerpedCarTuning(model, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+		return GetLerpedCarTuning(out, model, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
 	}
 }
