@@ -9,68 +9,87 @@ float UNDERCOVER_SteeringAtValue = 0.0;
 struct MWCarTuning {
 	std::string carName;
 
-	struct TempTable {
-		float value;
-
-		TempTable() {}
-		TempTable(float f) { value = f; }
-		float GetValue(float) { return value; }
-	};
-
-	struct TempAxlePairTable {
-		TempTable Front;
-		TempTable Rear;
-
-		TempTable& At(int i) { return (&Front)[i]; }
-	};
-
 	// chassis
-	TempTable AERO_CG;
-	TempTable AERO_COEFFICIENT;
-	float DRAG_COEFFICIENT;
-	float FRONT_WEIGHT_BIAS;
-	float RENDER_MOTION;
-	AxlePair RIDE_HEIGHT;
-	TempTable ROLL_CENTER;
-	float SHOCK_BLOWOUT;
 	AxlePair SHOCK_DIGRESSION;
-	TempAxlePairTable SHOCK_EXT_STIFFNESS;
-	TempAxlePairTable SHOCK_STIFFNESS;
-	AxlePair SHOCK_VALVING;
 	AxlePair SPRING_PROGRESSION;
-	AxlePair SPRING_STIFFNESS;
-	TempAxlePairTable SWAYBAR_STIFFNESS;
 	AxlePair TRAVEL;
+	AxlePair RIDE_HEIGHT;
+	AxlePair SHOCK_EXT_STIFFNESS;
+	AxlePair SHOCK_STIFFNESS;
+	AxlePair SPRING_STIFFNESS;
+	AxlePair SHOCK_VALVING;
+	AxlePair SWAYBAR_STIFFNESS;
+	float ROLL_CENTER;
+	float SHOCK_BLOWOUT;
+	float AERO_CG;
+	float RENDER_MOTION;
+	float AERO_COEFFICIENT;
+	float FRONT_WEIGHT_BIAS;
+	float DRAG_COEFFICIENT;
 
 	// brakes
 	AxlePair BRAKE_LOCK;
-	TempAxlePairTable BRAKES;
-	TempTable EBRAKE;
+	AxlePair BRAKES;
+	float EBRAKE;
 
 	// tires
-	AxlePair DYNAMIC_GRIP;
-	AxlePair GRIP_SCALE;
-	TempAxlePairTable STATIC_GRIP;
-	TempTable STEERING;
 	std::vector<float> YAW_CONTROL;
+	AxlePair GRIP_SCALE;
+	AxlePair DYNAMIC_GRIP;
+	AxlePair STATIC_GRIP;
+	float STEERING;
 	float YAW_SPEED;
 
 	// transmission
+	std::vector<float> GEAR_RATIO;
 	float DIFFERENTIAL[3];
+	float GEAR_EFFICIENCY[9];
+	float TORQUE_CONVERTER;
 	float TORQUE_SPLIT;
+	float CLUTCH_SLIP;
+	float OPTIMAL_SHIFT;
+	float SHIFT_SPEED;
+	float FINAL_GEAR;
 
 	// engine
-	std::vector<float> TORQUE; // todo
+	std::vector<float> TORQUE;
+	float SPEED_LIMITER[2];
+	std::vector<float> ENGINE_BRAKING;
+	float FLYWHEEL_MASS;
+	float MAX_RPM;
+	float RED_LINE;
+	float IDLE;
+
+	// induction
+	float LOW_BOOST;
+	float SPOOL_TIME_DOWN;
+	float VACUUM;
+	float SPOOL;
+	float SPOOL_TIME_UP;
+	float PSI;
+	float HIGH_BOOST;
 
 	// nos
+	float NOS_DISENGAGE = 2.0;
+	float TORQUE_BOOST = 1.0;
+	float FLOW_RATE = 3.0;
+	float RECHARGE_MIN = 50;
+	float NOS_CAPACITY = 5.0;
 	float RECHARGE_MAX = 30;
 	float RECHARGE_MAX_SPEED = 100;
-	float RECHARGE_MIN = 50;
 	float RECHARGE_MIN_SPEED = 50;
-	float NOS_DISENGAGE = 2.0;
 
 	// pvehicle
 	float TENSOR_SCALE[3];
+
+	static void ReadDynamicArray(toml::table& config, std::vector<float>& out, const char* category, const char* name) {
+		out.clear();
+		for (int i = 0; i < 1024; i++) {
+			float f = config[category][name][i].value_or(-0.011f);
+			if (f == -0.011f) break;
+			out.push_back(f);
+		}
+	}
 };
 std::vector<MWCarTuning> aCarTunings;
 MWCarTuning* LoadCarTuningFromFile(std::string configCarName) {
@@ -131,25 +150,38 @@ MWCarTuning* LoadCarTuningFromFile(std::string configCarName) {
 	tmp.STATIC_GRIP.Front = config["tires"]["STATIC_GRIP"][0].value_or(2.0);
 	tmp.STATIC_GRIP.Rear = config["tires"]["STATIC_GRIP"][1].value_or(2.0);
 	tmp.STEERING = config["tires"]["STEERING"].value_or(1.0);
-	tmp.YAW_CONTROL.clear();
-	tmp.YAW_CONTROL.push_back(config["tires"]["YAW_CONTROL"][0].value_or(1.0));
-	tmp.YAW_CONTROL.push_back(config["tires"]["YAW_CONTROL"][1].value_or(1.0));
-	tmp.YAW_CONTROL.push_back(config["tires"]["YAW_CONTROL"][2].value_or(1.0));
-	tmp.YAW_CONTROL.push_back(config["tires"]["YAW_CONTROL"][3].value_or(1.0));
+	tmp.ReadDynamicArray(config, tmp.YAW_CONTROL, "tires", "YAW_CONTROL");
 	tmp.YAW_SPEED = config["tires"]["YAW_SPEED"].value_or(1.0);
 
 	// transmission
-	tmp.DIFFERENTIAL[0] = config["transmission"]["DIFFERENTIAL"][0].value_or(1.0);
-	tmp.DIFFERENTIAL[1] = config["transmission"]["DIFFERENTIAL"][1].value_or(1.0);
-	tmp.DIFFERENTIAL[2] = config["transmission"]["DIFFERENTIAL"][2].value_or(1.0);
+	tmp.ReadDynamicArray(config, tmp.GEAR_RATIO, "transmission", "GEAR_RATIO");
+	for (int i = 0; i < 3; i++) { tmp.DIFFERENTIAL[i] = config["transmission"]["DIFFERENTIAL"][i].value_or(1.0); }
+	for (int i = 0; i < 9; i++) { tmp.GEAR_EFFICIENCY[i] = config["transmission"]["GEAR_EFFICIENCY"][i].value_or(1.0); }
+	tmp.TORQUE_CONVERTER = config["transmission"]["TORQUE_CONVERTER"].value_or(0.5);
 	tmp.TORQUE_SPLIT = config["transmission"]["TORQUE_SPLIT"].value_or(0.5);
+	tmp.CLUTCH_SLIP = config["transmission"]["CLUTCH_SLIP"].value_or(0.5);
+	tmp.OPTIMAL_SHIFT = config["transmission"]["OPTIMAL_SHIFT"].value_or(0.5);
+	tmp.SHIFT_SPEED = config["transmission"]["SHIFT_SPEED"].value_or(0.5);
+	tmp.FINAL_GEAR = config["transmission"]["FINAL_GEAR"].value_or(0.5);
 
 	// engine
-	for (int i = 0; i < 32; i++) {
-		float f = config["engine"]["TORQUE"][i].value_or(-0.011f);
-		if (f == -0.011f) break;
-		tmp.TORQUE.push_back(f);
-	}
+	tmp.ReadDynamicArray(config, tmp.TORQUE, "engine", "TORQUE");
+	tmp.SPEED_LIMITER[0] = config["engine"]["SPEED_LIMITER"][0].value_or(0.0);
+	tmp.SPEED_LIMITER[1] = config["engine"]["SPEED_LIMITER"][1].value_or(0.0);
+	tmp.ReadDynamicArray(config, tmp.ENGINE_BRAKING, "engine", "ENGINE_BRAKING");
+	tmp.FLYWHEEL_MASS = config["engine"]["FLYWHEEL_MASS"].value_or(0.0);
+	tmp.MAX_RPM = config["engine"]["MAX_RPM"].value_or(0.0);
+	tmp.RED_LINE = config["engine"]["RED_LINE"].value_or(0.0);
+	tmp.IDLE = config["engine"]["IDLE"].value_or(0.0);
+
+	// induction
+	tmp.LOW_BOOST = config["induction"]["LOW_BOOST"].value_or(0.0);
+	tmp.SPOOL_TIME_DOWN = config["induction"]["SPOOL_TIME_DOWN"].value_or(0.0);
+	tmp.VACUUM = config["induction"]["VACUUM"].value_or(0.0);
+	tmp.SPOOL = config["induction"]["SPOOL"].value_or(0.0);
+	tmp.SPOOL_TIME_UP = config["induction"]["SPOOL_TIME_UP"].value_or(0.0);
+	tmp.PSI = config["induction"]["PSI"].value_or(0.0);
+	tmp.HIGH_BOOST = config["induction"]["HIGH_BOOST"].value_or(0.0);
 
 	// pvehicle
 	tmp.TENSOR_SCALE[0] = config["pvehicle"]["TENSOR_SCALE"][0].value_or(-0.011f);
@@ -173,134 +205,6 @@ MWCarTuning* GetCarTuning(const char* model) {
 	}
 	WriteLog(std::format("Failed to find tunings for {}", model));
 	return &aCarTunings[0];
-}
-
-// tunings:
-// aud_r8_stk_08 - NFSC darius_top
-// aud_r8_stk_08_speedtest - NFSC darius_top
-// aud_rs4_stk_08 - a4_top
-// aud_s5_stk_08 - a4_top
-// bmw_m3_e92_08 - bmwm3gtr_top
-// bmw_m6_stk_08 - NFSC bmwm3gtr_crosschase
-// bmw_z4_m_07 - NFSC 350z_top
-// bug_vey_164_08 - NFSC darius_top
-// che_cam_con_07 - NFSC camaron_top
-// che_vet_sti_67 - corvette_top
-// che_vet_z06_06 - corvettec6r_top
-// dod_chr_bee_07 - NFSC charger06_top
-// for_esc_rs_96 - imprezawrx_top
-// for_foc_st_07 - punto_top
-// for_shl_gt_08 - NFSC mustangshlbyn_top
-// for_shl_ter_08 - NFSC mustangshlbyn_top
-// lex_is_f_08 - is300
-// mcl_f1_stk_94 - corvettec6r
-// mer_cls_55_08 - clk500
-// mer_cls_63_08 - clk500
-// mit_evo_ix_06 - lancerevo8
-// mit_evo_x_08 - lancerevo8
-// nis_370_z_09 - NFSC 350z_top
-// nis_gtr_r35_08 - NFSC skyline_top
-// nis_syl_aer_99 - NFSC skyline_top
-// player_cop_car_mid_05 - viper_top
-// player_cop_car_mus_08 - mustanggt_top
-// player_cop_car_suv_04 - cts_top
-// pon_sol_gxp_06 - gto_top
-// por_gt3_rs_08 - 911gt2_top
-// ren_meg_cou_08 - gti_top
-// vol_gol_r32_06 - gti_top
-// vol_sci_stk_08 - cobaltss_top
-
-void InitMWCarTunings() {
-	{
-		MWCarTuning tmp;
-		tmp.carName = "elise";
-		// chassis
-		tmp.AERO_CG = 50.0;
-		tmp.AERO_COEFFICIENT = 0.14;
-		tmp.DRAG_COEFFICIENT = 0.22;
-		//tmp.FRONT_AXLE = 1.13;
-		tmp.FRONT_WEIGHT_BIAS = 53;
-		tmp.RENDER_MOTION = 1.0;
-		tmp.RIDE_HEIGHT = {8, 8};
-		tmp.ROLL_CENTER = 11;
-		tmp.SHOCK_BLOWOUT = 5;
-		tmp.SHOCK_DIGRESSION = {0.1, 0.1};
-		tmp.SHOCK_EXT_STIFFNESS = {35, 35};
-		tmp.SHOCK_STIFFNESS = {30, 30};
-		tmp.SHOCK_VALVING = {18, 18};
-		tmp.SPRING_PROGRESSION = {6.1, 6.1};
-		tmp.SPRING_STIFFNESS = {450, 400};
-		tmp.SWAYBAR_STIFFNESS = {200, 200};
-		//tmp.TRACK_WIDTH = {1.465, 1.522};
-		tmp.TRAVEL = {6.5, 6.5};
-		//tmp.WHEEL_BASE = 2.35;
-
-		// brakes
-		tmp.BRAKE_LOCK = {1.0, 2.75};
-		tmp.BRAKES = {280, 350};
-		tmp.EBRAKE = 400;
-
-		// tires
-		tmp.DYNAMIC_GRIP = {1.4, 1.5};
-		tmp.GRIP_SCALE = {1.0, 1.0};
-		//tmp.SECTION_WIDTH = {225, 225};
-		tmp.STATIC_GRIP = {1.6, 1.7};
-		tmp.STEERING = 1.0;
-		tmp.YAW_CONTROL = {0.0, 0.1, 0.3, 1.0};
-		tmp.YAW_SPEED = 0.4;
-
-		// transmission
-		tmp.DIFFERENTIAL[0] = 0.85;
-		tmp.DIFFERENTIAL[1] = 0.85;
-		tmp.DIFFERENTIAL[2] = 0.0;
-		tmp.TORQUE_SPLIT = 0.0;
-		aCarTunings.push_back(tmp);
-	}
-	{
-		MWCarTuning tmp;
-		tmp.carName = "gti_top";
-		// chassis
-		tmp.AERO_CG = 47.0;
-		tmp.AERO_COEFFICIENT = 0.24;
-		tmp.DRAG_COEFFICIENT = 0.35;
-		//tmp.FRONT_AXLE = 1.17;
-		tmp.FRONT_WEIGHT_BIAS = 53.25;
-		tmp.RENDER_MOTION = 0.5;
-		tmp.RIDE_HEIGHT = {8, 8};
-		tmp.ROLL_CENTER = 9;
-		tmp.SHOCK_BLOWOUT = 5;
-		tmp.SHOCK_DIGRESSION = {0.1, 0.1};
-		tmp.SHOCK_EXT_STIFFNESS = {65, 65};
-		tmp.SHOCK_STIFFNESS = {60, 55};
-		tmp.SHOCK_VALVING = {20, 20};
-		tmp.SPRING_PROGRESSION = {7, 7};
-		tmp.SPRING_STIFFNESS = {450, 400};
-		tmp.SWAYBAR_STIFFNESS = {500, 500};
-		//tmp.TRACK_WIDTH = {1.539, 1.538};
-		tmp.TRAVEL = {6.5, 6.5};
-		//tmp.WHEEL_BASE = 2.578;
-
-		// brakes
-		tmp.BRAKE_LOCK = {1.0, 3.5};
-		tmp.BRAKES = {390, 475};
-		tmp.EBRAKE = 750;
-
-		// tires
-		tmp.DYNAMIC_GRIP = {1.85, 1.9};
-		tmp.GRIP_SCALE = {1.05, 1.1};
-		//tmp.SECTION_WIDTH = {235, 235};
-		tmp.STATIC_GRIP = {2.1, 2.1};
-		tmp.STEERING = 1.0;
-		tmp.YAW_CONTROL = {0.1, 0.6, 0.8, 1.25};
-		tmp.YAW_SPEED = 0.35;
-
-		// transmission
-		tmp.DIFFERENTIAL[0] = 0.7;
-		tmp.DIFFERENTIAL[1] = 0.7;
-		tmp.DIFFERENTIAL[2] = 0.0;
-		tmp.TORQUE_SPLIT = 1.0;
-		aCarTunings.push_back(tmp);
-	}
 }
 
 class SuspensionRacer;

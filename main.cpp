@@ -334,6 +334,16 @@ void DebugMenu() {
 		ChloeMenuLib::BeginMenu();
 
 		if (pEngine) {
+			auto ply = VEHICLE_LIST::GetList(VEHICLE_PLAYERS)[0];
+
+			DrawMenuOption(std::format("CARSLOTID_BRAKE_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_BRAKE_PACKAGE].kit_num));
+			DrawMenuOption(std::format("CARSLOTID_DRIVETRAIN_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_DRIVETRAIN_PACKAGE].kit_num));
+			DrawMenuOption(std::format("CARSLOTID_ENGINE_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_ENGINE_PACKAGE].kit_num));
+			DrawMenuOption(std::format("CARSLOTID_FORCED_INDUCTION_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_FORCED_INDUCTION_PACKAGE].kit_num));
+			DrawMenuOption(std::format("CARSLOTID_NITROUS_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_NITROUS_PACKAGE].kit_num));
+			DrawMenuOption(std::format("CARSLOTID_SUSPENSION_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_SUSPENSION_PACKAGE].kit_num));
+			DrawMenuOption(std::format("CARSLOTID_TIRE_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_TIRE_PACKAGE].kit_num));
+
 			DrawMenuOption(std::format("GetDriveTorque {:.2f}", pEngine->GetDriveTorque()));
 			DrawMenuOption(std::format("GetSpeedometer {:.2f}", pEngine->GetSpeedometer()));
 			DrawMenuOption(std::format("GetMaxSpeedometer {:.2f}", pEngine->GetMaxSpeedometer()));
@@ -445,11 +455,19 @@ SuspensionRacer* ChassisHumanConstructHooked(BehaviorParams* bp) {
 
 auto oldctorengine = (void*(__thiscall*)(void*, BehaviorParams*))0x73A9D0;
 EngineRacer* EngineRacerConstructHooked(BehaviorParams* bp) {
-	auto data = pEngine = (EngineRacer*)gFastMem.Alloc(sizeof(EngineRacer), nullptr);
-	memset(data,0,sizeof(EngineRacer));
-	oldctorbase(data, bp, 0);
-	data->Create(*bp);
-	return data;
+	auto simable = bp->fowner->Object.Find<ISimable>();
+	if (simable->mCOMObject->Find<IVehicle>()->GetDriverClass() == DRIVER_HUMAN) {
+		auto data = pEngine = (EngineRacer*)gFastMem.Alloc(sizeof(EngineRacer), nullptr);
+		memset(data,0,sizeof(EngineRacer));
+		oldctorbase(data, bp, 0);
+		data->Create(*bp);
+		return data;
+	}
+	else {
+		auto data = (EngineRacer*)gFastMem.Alloc(0x25C, nullptr);
+		oldctorengine(data, bp);
+		return data;
+	}
 }
 
 void AssistLoop() {

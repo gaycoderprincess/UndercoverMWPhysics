@@ -25,21 +25,21 @@ namespace Physics {
 		};
 
 		// Credits: Brawltendo
-		float EngineInertia(const Attrib::Gen::car_tuning &engine, const bool loaded) {
+		float EngineInertia(MWCarTuning* mw, const Attrib::Gen::car_tuning &engine, const bool loaded) {
 			float scale;
 			if (loaded)
 				scale = 1.f;
 			else
 				scale = 0.35f;
-			return scale * (engine.GetLayout()->FLYWHEEL_MASS * 0.025f + 0.25f);
+			return scale * (mw->FLYWHEEL_MASS * 0.025f + 0.25f);
 		}
 
 		// Credits: Brawltendo
-		eInductionType InductionType(const Attrib::Gen::car_tuning &induction) {
-			if (induction.GetLayout()->HIGH_BOOST > 0.0f || induction.GetLayout()->LOW_BOOST > 0.0f) {
+		eInductionType InductionType(MWCarTuning* mw, const Attrib::Gen::car_tuning &induction) {
+			if (mw->HIGH_BOOST > 0.0f || mw->LOW_BOOST > 0.0f) {
 				// turbochargers don't produce significant boost until above the boost threshold (the lowest engine RPM at which it will spool up)
 				// meanwhile superchargers apply boost proportionally to the engine RPM, so this param isn't needed there
-				if (induction.GetLayout()->SPOOL > 0.0f) {
+				if (mw->SPOOL > 0.0f) {
 					return INDUCTION_TURBO_CHARGER;
 				} else {
 					return INDUCTION_SUPER_CHARGER;
@@ -50,9 +50,9 @@ namespace Physics {
 		}
 
 		float Torque(MWCarTuning* tuning, const Attrib::Gen::car_tuning &engine, float rpm) {
-			float rpm_min = engine.GetLayout()->IDLE;
-			float rpm_max = engine.GetLayout()->MAX_RPM;
-			rpm = UMath::Clamp(rpm, engine.GetLayout()->IDLE, engine.GetLayout()->RED_LINE);
+			float rpm_min = tuning->IDLE;
+			float rpm_max = tuning->MAX_RPM;
+			rpm = UMath::Clamp(rpm, tuning->IDLE, tuning->RED_LINE);
 			unsigned int numpts = tuning->TORQUE.size();
 			if (numpts > 1) {
 				float ratio;
@@ -72,9 +72,9 @@ namespace Physics {
 		}
 
 		// Credits: Brawltendo
-		float NosBoost(const Attrib::Gen::car_tuning &nos, const Tunings *tunings) {
+		float NosBoost(MWCarTuning* mw, const Attrib::Gen::car_tuning &nos, const Tunings *tunings) {
 			float torque_scale = 1.0f;
-			float boost = nos.GetLayout()->TORQUE_BOOST;
+			float boost = mw->TORQUE_BOOST;
 			if (tunings) {
 				boost += boost * tunings->Value[Physics::Tunings::NOS] * 0.25f;
 			}
@@ -82,8 +82,8 @@ namespace Physics {
 		}
 
 		// Credits: Brawltendo
-		float NosCapacity(const Attrib::Gen::car_tuning &nos, const Tunings *tunings) {
-			float capacity = nos.GetLayout()->NOS_CAPACITY;
+		float NosCapacity(MWCarTuning* mw, const Attrib::Gen::car_tuning &nos, const Tunings *tunings) {
+			float capacity = mw->NOS_CAPACITY;
 			if (tunings) {
 				capacity -= capacity * tunings->Value[Physics::Tunings::NOS] * 0.25f;
 			}
@@ -91,20 +91,20 @@ namespace Physics {
 		}
 
 		// Credits: Brawltendo
-		Mps Speedometer(const Attrib::Gen::car_tuning &engine, Rpm rpm, GearID gear, const Tunings *tunings) {
+		Mps Speedometer(MWCarTuning* mw, const Attrib::Gen::car_tuning &engine, Rpm rpm, GearID gear, const Tunings *tunings) {
 			float speed = 0.0f;
-			float gear_ratio = engine.GetLayout()->GEAR_RATIO[gear] * engine.GetLayout()->FINAL_GEAR;
-			float power_range = engine.GetLayout()->RED_LINE - engine.GetLayout()->IDLE;
+			float gear_ratio = mw->GEAR_RATIO[gear] * mw->FINAL_GEAR;
+			float power_range = mw->RED_LINE - mw->IDLE;
 			gear_ratio = UMath::Abs(gear_ratio);
 			if (gear_ratio > 0.0f && power_range > 0.0f) {
 				float wheelrear = WheelDiameter(engine, false) * 0.5f;
 				float wheelfront = WheelDiameter(engine, true) * 0.5f;
 				float avg_wheel_radius = (wheelrear + wheelfront) * 0.5f;
-				float clutch_rpm = (rpm - engine.GetLayout()->IDLE) / gear_ratio / power_range * engine.GetLayout()->RED_LINE;
+				float clutch_rpm = (rpm - mw->IDLE) / gear_ratio / power_range * mw->RED_LINE;
 				speed = RPM2RPS(clutch_rpm) * avg_wheel_radius;
 			}
 
-			float limiter = MPH2MPS(engine.GetLayout()->SPEED_LIMITER[0]);
+			float limiter = MPH2MPS(mw->SPEED_LIMITER[0]);
 			if (limiter > 0.0f) {
 				speed = UMath::Min(speed, limiter);
 			}
@@ -113,8 +113,8 @@ namespace Physics {
 		}
 
 		// Credits: Brawltendo
-		float InductionRPM(const Attrib::Gen::car_tuning &engine, const Tunings *tunings) {
-			float spool = engine.GetLayout()->SPOOL;
+		float InductionRPM(MWCarTuning* mw, const Attrib::Gen::car_tuning &engine, const Tunings *tunings) {
+			float spool = mw->SPOOL;
 
 			// tune the (normalized) RPM at which forced induction kicks in
 			if (tunings && spool > 0.0f) {
@@ -129,23 +129,23 @@ namespace Physics {
 			}
 
 			// return the unnormalized RPM
-			return spool * (engine.GetLayout()->RED_LINE - engine.GetLayout()->IDLE) + engine.GetLayout()->IDLE;
+			return spool * (mw->RED_LINE - mw->IDLE) + mw->IDLE;
 		}
 
 		// Credits: Brawltendo
-		float InductionBoost(const Attrib::Gen::car_tuning &engine, float rpm, float spool, const Tunings *tunings, float *psi) {
+		float InductionBoost(MWCarTuning* mw, const Attrib::Gen::car_tuning &engine, float rpm, float spool, const Tunings *tunings, float *psi) {
 			if (psi) {
 				*psi = 0.0f;
 			}
 
 			spool = UMath::Clamp(spool, 0.0f, 1.0f);
-			float rpm_min = engine.GetLayout()->IDLE;
-			float rpm_max = engine.GetLayout()->RED_LINE;
+			float rpm_min = mw->IDLE;
+			float rpm_max = mw->RED_LINE;
 			float induction_boost = 0.f;
-			float spool_rpm = InductionRPM(engine, tunings);
-			float high_boost = engine.GetLayout()->HIGH_BOOST;
-			float low_boost = engine.GetLayout()->LOW_BOOST;
-			float drag = engine.GetLayout()->VACUUM;
+			float spool_rpm = InductionRPM(mw, engine, tunings);
+			float high_boost = mw->HIGH_BOOST;
+			float low_boost = mw->LOW_BOOST;
+			float drag = mw->VACUUM;
 
 			if (high_boost > 0.0f || low_boost > 0.0f) {
 				// tuning slider adjusts the induction boost bias
@@ -160,14 +160,14 @@ namespace Physics {
 					float induction_ratio = UMath::Ramp(rpm, spool_rpm, rpm_max);
 					induction_boost = induction_ratio * high_boost + (1.0f - induction_ratio) * low_boost;
 					if (psi) {
-						*psi = spool * engine.GetLayout()->PSI * UMath::Ramp(induction_boost, 0.0f, UMath::Max(high_boost, low_boost));
+						*psi = spool * mw->PSI * UMath::Ramp(induction_boost, 0.0f, UMath::Max(high_boost, low_boost));
 					}
 				} else if (drag < 0.0f) {
 					// apply vacuum effect when not in boost
 					float drag_ratio = UMath::Ramp(rpm, rpm_min, spool_rpm);
 					induction_boost = drag_ratio * drag;
 					if (psi) {
-						*psi = drag_ratio * -engine.GetLayout()->PSI * UMath::Ramp(-induction_boost, 0.0f, UMath::Max(high_boost, low_boost));
+						*psi = drag_ratio * -mw->PSI * UMath::Ramp(-induction_boost, 0.0f, UMath::Max(high_boost, low_boost));
 					}
 				}
 			}
@@ -183,17 +183,17 @@ namespace Physics {
 				shift_down[i] = 0.0f;
 			}
 
-			unsigned int num_gear_ratios = tuning.GetLayout()->_Array_GEAR_RATIO.GetLength();
+			unsigned int num_gear_ratios = mw->GEAR_RATIO.size();
 			if (numpts < num_gear_ratios)
 				return false;
 
-			float redline = tuning.GetLayout()->RED_LINE;
+			float redline = mw->RED_LINE;
 			int topgear = num_gear_ratios - 1;
 			int j;
 			for (j = G_FIRST; j < topgear; ++j) {
-				float g1 = tuning.GetLayout()->GEAR_RATIO[j];
-				float g2 = tuning.GetLayout()->GEAR_RATIO[j + 1];
-				float rpm = (redline + tuning.GetLayout()->IDLE) * 0.5f;
+				float g1 = mw->GEAR_RATIO[j];
+				float g2 = mw->GEAR_RATIO[j + 1];
+				float rpm = (redline + mw->IDLE) * 0.5f;
 				float max = rpm;
 				int flag = 0;
 
@@ -202,12 +202,12 @@ namespace Physics {
 					while (!flag) {
 						// seems like the rpm and spool params are swapped in both instances
 						// so either it's a mistake that was copy-pasted or it was a deliberate choice
-						float currenttorque = Torque(mw, tuning, max) * (InductionBoost(tuning, 1.0f, max, NULL, NULL) + 1.0f);
+						float currenttorque = Torque(mw, tuning, max) * (InductionBoost(mw, tuning, 1.0f, max, NULL, NULL) + 1.0f);
 						float shiftuptorque;
 						if (UMath::Abs(g1) > 0.00001f) {
 							float ratio = g2 / g1;
 							float next_rpm = ratio * max;
-							shiftuptorque = Torque(mw, tuning, next_rpm) * (InductionBoost(tuning, 1.0f, next_rpm, NULL, NULL) + 1.0f) * g2 / g1;
+							shiftuptorque = Torque(mw, tuning, next_rpm) * (InductionBoost(mw, tuning, 1.0f, next_rpm, NULL, NULL) + 1.0f) * g2 / g1;
 						} else {
 							shiftuptorque = 0.0f;
 						}
@@ -238,20 +238,19 @@ namespace Physics {
 				}
 			}
 
-			shift_up[topgear] = tuning.GetLayout()->RED_LINE;
+			shift_up[topgear] = mw->RED_LINE;
 			return true;
 		}
 
 		float MaxInductedTorque(MWCarTuning* mw, Attrib::Gen::car_tuning &engine, Rpm &atrpm, const Tunings *tunings) {
 			if (mw->TORQUE.size() > 1)  {
 				auto v9 = 0.0;
-				atrpm = engine.GetLayout()->IDLE;
-				auto v11 = engine.GetLayout();
-				auto v12 = v11->IDLE;
-				auto v13 = ((v11->MAX_RPM - v11->IDLE) / (mw->TORQUE.size() - 1));
+				atrpm = mw->IDLE;
+				auto v12 = mw->IDLE;
+				auto v13 = ((mw->MAX_RPM - mw->IDLE) / (mw->TORQUE.size() - 1));
 				int v10 = 0;
 				while (v10 < mw->TORQUE.size()) {
-					auto v18 = (mw->TORQUE[v10] * (Physics::Info::InductionBoost(engine, v12, 1.0, tunings, nullptr) + 1.0));
+					auto v18 = (mw->TORQUE[v10] * (Physics::Info::InductionBoost(mw, engine, v12, 1.0, tunings, nullptr) + 1.0));
 					if (v18 > v9) {
 						atrpm = v12;
 						v9 = v18;
@@ -259,16 +258,16 @@ namespace Physics {
 					v12 = (v12 + v13);
 					++v10;
 				}
-				auto v20 = engine.GetLayout()->RED_LINE;
+				auto v20 = mw->RED_LINE;
 				if (atrpm < v20)
 					v20 = atrpm;
 				auto v21 = v20;
-				if (engine.GetLayout()->IDLE > v20)
-					v21 = engine.GetLayout()->IDLE;
+				if (mw->IDLE > v20)
+					v21 = mw->IDLE;
 				atrpm = v21;
 				return v9;
 			} else {
-				atrpm = engine.GetLayout()->IDLE;
+				atrpm = mw->IDLE;
 			}
 			return 0.0;
 		}
@@ -276,11 +275,11 @@ namespace Physics {
 		float MaxInductedPower(MWCarTuning* mw, Attrib::Gen::car_tuning& engine, const Tunings* tunings) {
 			if (mw->TORQUE.size() > 1)  {
 				float v11 = 0.0;
-				auto v12 = engine.GetLayout()->IDLE;
-				auto v15 = ((engine.GetLayout()->MAX_RPM - engine.GetLayout()->IDLE) / (mw->TORQUE.size() - 1));
+				auto v12 = mw->IDLE;
+				auto v15 = ((mw->MAX_RPM - mw->IDLE) / (mw->TORQUE.size() - 1));
 				int v13 = 0;
 				while (v13 < mw->TORQUE.size())  {
-					auto v20 = (Physics::Info::InductionBoost(engine, v12, 1.0, tunings, nullptr) + 1.0);
+					auto v20 = (Physics::Info::InductionBoost(mw, engine, v12, 1.0, tunings, nullptr) + 1.0);
 					if ( (((mw->TORQUE[v13] * v20) * v12) * 0.00019040366) > v11 )
 						v11 = (((mw->TORQUE[v13] * v20) * v12) * 0.00019040366);
 					v12 = (v12 + v15);
@@ -427,8 +426,8 @@ class EngineRacer : public VehicleBehavior {
 			range = 0.0f;
 			return 0.0f;
 		} else {
-			range = (mCarInfo.GetLayout()->RED_LINE - mCarInfo.GetLayout()->IDLE) * 0.25f;
-			float upper_limit = mCarInfo.GetLayout()->RED_LINE + 500.0f;
+			range = (GetMWCarData(this)->RED_LINE - GetMWCarData(this)->IDLE) * 0.25f;
+			float upper_limit = GetMWCarData(this)->RED_LINE + 500.0f;
 			return UMath::Min(mPeakTorqueRPM + range, upper_limit) - range;
 		}
 	}
@@ -438,22 +437,22 @@ class EngineRacer : public VehicleBehavior {
 		return mMaxHP;
 	}
 	Hp GetMinHorsePower() const {
-		return FTLB2HP(Physics::Info::Torque(GetMWCarData(this), mCarInfo, mCarInfo.GetLayout()->IDLE) * mCarInfo.GetLayout()->IDLE, 1.0f);
+		return FTLB2HP(Physics::Info::Torque(GetMWCarData(this), mCarInfo, GetMWCarData(this)->IDLE) * GetMWCarData(this)->IDLE, 1.0f);
 	}
 	float GetRPM() const {
 		return mRPM;
 	}
 	float GetMaxRPM() const {
-		return mCarInfo.GetLayout()->MAX_RPM;
+		return GetMWCarData(this)->MAX_RPM;
 	}
 	float GetPeakTorqueRPM() const {
 		return mPeakTorqueRPM;
 	}
 	float GetRedline() const {
-		return mCarInfo.GetLayout()->RED_LINE;
+		return GetMWCarData(this)->RED_LINE;
 	}
 	float GetMinRPM() const {
-		return mCarInfo.GetLayout()->IDLE;
+		return GetMWCarData(this)->IDLE;
 	}
 	float GetNOSCapacity() const {
 		return mNOSCapacity;
@@ -465,10 +464,10 @@ class EngineRacer : public VehicleBehavior {
 		return mNOSEngaged >= 1.0f;
 	}
 	bool HasNOS() const {
-		return mCarInfo.GetLayout()->NOS_CAPACITY > 0.0f && mCarInfo.GetLayout()->TORQUE_BOOST > 0.0f;
+		return GetMWCarData(this)->NOS_CAPACITY > 0.0f && GetMWCarData(this)->TORQUE_BOOST > 0.0f;
 	}
 	float GetNOSFlowRate() const {
-		return mCarInfo.GetLayout()->FLOW_RATE;
+		return GetMWCarData(this)->FLOW_RATE;
 	}
 
 	void ChargeNOS(float charge) {
@@ -489,7 +488,7 @@ class EngineRacer : public VehicleBehavior {
 
 	// IInductable
 	Physics::Info::eInductionType InductionType() const {
-		return Physics::Info::InductionType(mCarInfo);
+		return Physics::Info::InductionType(GetMWCarData(this), mCarInfo);
 	}
 	float GetInductionPSI() const {
 		return mPSI;
@@ -498,7 +497,7 @@ class EngineRacer : public VehicleBehavior {
 		return mSpool;
 	}
 	float GetMaxInductionPSI() const {
-		return mCarInfo.GetLayout()->PSI;
+		return GetMWCarData(this)->PSI;
 	}
 
 	// IEngineDamage
@@ -551,24 +550,24 @@ class EngineRacer : public VehicleBehavior {
 
 	// Inlines
 	unsigned int GetNumGearRatios() const {
-		return mCarInfo.GetLayout()->_Array_GEAR_RATIO.GetLength();
+		return GetMWCarData(this)->GEAR_RATIO.size();
 	}
 
 	float GetGearRatio(unsigned int idx) const {
-		return mCarInfo.GetLayout()->GEAR_RATIO[idx];
+		return GetMWCarData(this)->GEAR_RATIO[idx];
 	}
 
 	float GetGearEfficiency(unsigned int idx) const {
-		return mCarInfo.GetLayout()->GEAR_EFFICIENCY[idx];
+		return GetMWCarData(this)->GEAR_EFFICIENCY[idx];
 	}
 
 	float GetFinalGear() const {
-		return mCarInfo.GetLayout()->FINAL_GEAR;
+		return GetMWCarData(this)->FINAL_GEAR;
 	}
 
 	float GetRatioChange(unsigned int from, unsigned int to) const {
-		float ratio1 = mCarInfo.GetLayout()->GEAR_RATIO[from];
-		float ratio2 = mCarInfo.GetLayout()->GEAR_RATIO[to];
+		float ratio1 = GetMWCarData(this)->GEAR_RATIO[from];
+		float ratio2 = GetMWCarData(this)->GEAR_RATIO[to];
 
 		if (ratio1 > 0.0f && ratio2 > FLOAT_EPSILON) {
 			return ratio1 / ratio2;
@@ -578,7 +577,7 @@ class EngineRacer : public VehicleBehavior {
 	}
 
 	float GetShiftDelay(unsigned int gear) const {
-		return mCarInfo.GetLayout()->SHIFT_SPEED * GetGearRatio(gear);
+		return GetMWCarData(this)->SHIFT_SPEED * GetGearRatio(gear);
 	}
 
 	bool RearWheelDrive() const {

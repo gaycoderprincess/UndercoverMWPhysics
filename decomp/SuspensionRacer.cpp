@@ -1,7 +1,7 @@
 namespace Physics {
 	namespace Info {
 		float AerodynamicDownforce(const SuspensionRacer* pThis, const float speed) {
-			return speed * 2 * GetMWCarData(pThis)->AERO_COEFFICIENT.GetValue(UNDERCOVER_AeroCoeffAtValue) * 1000.0f;
+			return speed * 2 * GetMWCarData(pThis)->AERO_COEFFICIENT * 1000.0f;
 		}
 	}
 }
@@ -182,8 +182,8 @@ float EBrakingTorque = 10.0f;
 
 // Credits: Brawltendo
 void SuspensionRacer::Tire::CheckForBrakeLock(float ground_force) {
-	const float brake_spec = GetMWCarData(this)->BRAKE_LOCK.At(mAxleIndex) * FTLB2NM(GetMWCarData(this)->BRAKES.At(mAxleIndex).GetValue(UNDERCOVER_BrakesAtValue)) * BrakingTorque;
-	const float ebrake_spec = FTLB2NM(GetMWCarData(this)->EBRAKE.GetValue(UNDERCOVER_BrakesAtValue)) * EBrakingTorque;
+	const float brake_spec = GetMWCarData(this)->BRAKE_LOCK.At(mAxleIndex) * FTLB2NM(GetMWCarData(this)->BRAKES.At(mAxleIndex)) * BrakingTorque;
+	const float ebrake_spec = FTLB2NM(GetMWCarData(this)->EBRAKE) * EBrakingTorque;
 	static float StaticToDynamicBrakeForceRatio = 1.2f;
 	static float BrakeLockAngularVelocityFactor = 100.0f;
 
@@ -238,8 +238,8 @@ void SuspensionRacer::Tire::UpdateFree(float dT) {
 		mAngularAcc = 0.0f;
 		mAV = 0.0f;
 	} else {
-		const float brake_spec = FTLB2NM(GetMWCarData(this)->BRAKES.At(mAxleIndex).GetValue(UNDERCOVER_BrakesAtValue)) * BrakingTorque;
-		const float ebrake_spec = FTLB2NM(GetMWCarData(this)->EBRAKE.GetValue(UNDERCOVER_BrakesAtValue)) * EBrakingTorque;
+		const float brake_spec = FTLB2NM(GetMWCarData(this)->BRAKES.At(mAxleIndex)) * BrakingTorque;
+		const float ebrake_spec = FTLB2NM(GetMWCarData(this)->EBRAKE) * EBrakingTorque;
 		float bt = mBrake * brake_spec;
 		float ebt = mEBrake * ebrake_spec;
 		ApplyBrakeTorque(mAV > 0.0f ? -bt : bt);
@@ -259,10 +259,10 @@ static const float InvTireForceEllipseRatio = 1.0 / TireForceEllipseRatio;
 
 // Credits: Brawltendo
 float SuspensionRacer::Tire::UpdateLoaded(float lat_vel, float fwd_vel, float body_speed, float load, float dT) {
-	const float brake_spec = FTLB2NM(GetMWCarData(this)->BRAKES.At(mAxleIndex).GetValue(UNDERCOVER_BrakesAtValue)) * BrakingTorque;
-	const float ebrake_spec = FTLB2NM(GetMWCarData(this)->EBRAKE.GetValue(UNDERCOVER_BrakesAtValue)) * EBrakingTorque;
+	const float brake_spec = FTLB2NM(GetMWCarData(this)->BRAKES.At(mAxleIndex)) * BrakingTorque;
+	const float ebrake_spec = FTLB2NM(GetMWCarData(this)->EBRAKE) * EBrakingTorque;
 	const float dynamicgrip_spec = GetMWCarData(this)->DYNAMIC_GRIP.At(mAxleIndex);
-	const float staticgrip_spec = GetMWCarData(this)->STATIC_GRIP.At(mAxleIndex).GetValue(UNDERCOVER_StaticGripAtValue);
+	const float staticgrip_spec = GetMWCarData(this)->STATIC_GRIP.At(mAxleIndex);
 	// free rolling wheel
 	if (mLoad <= 0.0f && !mBrakeLocked) {
 		mAV = fwd_vel / mRadius;
@@ -669,7 +669,7 @@ void SuspensionRacer::SetCOG(float extra_bias, float extra_ride) {
 		fwbias = 0.5f;
 	}
 	float cg_z = (front_z - rear_z) * fwbias + rear_z;
-	float cg_y = INCH2METERS(GetMWCarData(this)->ROLL_CENTER.GetValue(UNDERCOVER_RollCenterAtValue)) - (dim.y + UMath::Max(INCH2METERS(GetMWCarData(this)->RIDE_HEIGHT.At(0) + extra_ride),
+	float cg_y = INCH2METERS(GetMWCarData(this)->ROLL_CENTER) - (dim.y + UMath::Max(INCH2METERS(GetMWCarData(this)->RIDE_HEIGHT.At(0) + extra_ride),
 																			  INCH2METERS(GetMWCarData(this)->RIDE_HEIGHT.At(1) + extra_ride)));
 	UMath::Vector3 cog{0.0f, cg_y, cg_z};
 	mRB->SetCenterOfGravity(&cog);
@@ -756,7 +756,7 @@ void SuspensionRacer::DoAerodynamics(const State &state, float drag_pct, float a
 			UMath::Vector3 aero_center{state.cog.x, state.cog.y, state.cog.z};
 			// when at least 1 wheel is grounded, change the downforce forward position using the aero CG and axle positions
 			if (state.ground_effect != 0.0f) {
-				aero_center.z = (aero_front_z - aero_rear_z) * (GetMWCarData(this)->AERO_CG.GetValue(UNDERCOVER_AeroCGAtValue) * 0.01f) + aero_rear_z;
+				aero_center.z = (aero_front_z - aero_rear_z) * (GetMWCarData(this)->AERO_CG * 0.01f) + aero_rear_z;
 			}
 
 			if (Tweak_PlaneDynamics != 0.0f) {
@@ -978,7 +978,7 @@ void SuspensionRacer::ComputeAckerman(const float steering, const State &state, 
 float SuspensionRacer::DoAISteering(State &state) {
 	mSteering.Maximum = 45.0f;
 	if (state.driver_style != STYLE_DRAG) {
-		mSteering.Maximum = GetMWCarData(this)->STEERING.GetValue(UNDERCOVER_SteeringAtValue) * 45.0f;
+		mSteering.Maximum = GetMWCarData(this)->STEERING * 45.0f;
 	}
 
 	return DEG2ANGLE(mSteering.Maximum * state.steer_input);
@@ -1063,7 +1063,7 @@ float SuspensionRacer::DoHumanSteering(State &state) {
 		steer -= 360.0f;
 	}
 
-	float steering_coeff = GetMWCarData(this)->STEERING.GetValue(UNDERCOVER_SteeringAtValue);
+	float steering_coeff = GetMWCarData(this)->STEERING;
 	ISteeringWheel::SteeringType steer_type = ISteeringWheel::kGamePad;
 
 	IPlayer *player = GetOwner()->GetPlayer();
@@ -1075,7 +1075,6 @@ float SuspensionRacer::DoHumanSteering(State &state) {
 		}
 	}
 
-	float max_steering;
 	float newsteer = steer_input * CalculateMaxSteering(state, steer_type) * steering_coeff;
 	newsteer = bClamp(newsteer, -45.0f, 45.0f);
 
@@ -1467,12 +1466,12 @@ void SuspensionRacer::DoWheelForces(State &state) {
 	float progression[2];
 
 	for (unsigned int i = 0; i < 2; ++i) {
-		shock_specs[i] = LBIN2NM(GetMWCarData(this)->SHOCK_STIFFNESS.At(i).GetValue(UNDERCOVER_SuspensionAtValue));
-		shock_ext_specs[i] = LBIN2NM(GetMWCarData(this)->SHOCK_EXT_STIFFNESS.At(i).GetValue(UNDERCOVER_SuspensionAtValue));
+		shock_specs[i] = LBIN2NM(GetMWCarData(this)->SHOCK_STIFFNESS.At(i));
+		shock_ext_specs[i] = LBIN2NM(GetMWCarData(this)->SHOCK_EXT_STIFFNESS.At(i));
 		shock_valving[i] = INCH2METERS(GetMWCarData(this)->SHOCK_VALVING.At(i));
 		shock_digression[i] = 1.0f - GetMWCarData(this)->SHOCK_DIGRESSION.At(i);
 		spring_specs[i] = LBIN2NM(GetMWCarData(this)->SPRING_STIFFNESS.At(i));
-		sway_specs[i] = LBIN2NM(GetMWCarData(this)->SWAYBAR_STIFFNESS.At(i).GetValue(UNDERCOVER_SuspensionAtValue));
+		sway_specs[i] = LBIN2NM(GetMWCarData(this)->SWAYBAR_STIFFNESS.At(i));
 		travel_specs[i] = INCH2METERS(GetMWCarData(this)->TRAVEL.At(i));
 		rideheight_specs[i] = INCH2METERS(GetMWCarData(this)->RIDE_HEIGHT.At(i) + ride_extra);
 		progression[i] = GetMWCarData(this)->SPRING_PROGRESSION.At(i);
@@ -1861,6 +1860,10 @@ void SuspensionRacer::MatchSpeed(float speed) {
 
 void SuspensionRacer::dtor(char a2) {
 	FUNCTION_LOG("SuspensionRacer::dtor");
+
+	if (mCarInfo.mCollection) {
+		Attrib::Collection::Release(mCarInfo.mCollection, 0);
+	}
 
 	for (int i = 0; i < 4; ++i) {
 		WriteLog("delete mTires[i]");

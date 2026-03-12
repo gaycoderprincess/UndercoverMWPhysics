@@ -468,7 +468,7 @@ namespace MWChassis {
 	float __thiscall GetDownCoefficient(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDownCoefficient");
 		auto pThis = GetSuspensionRacer(ptr);
-		return GetMWCarData(pThis)->AERO_COEFFICIENT.GetValue(UNDERCOVER_AeroCoeffAtValue);
+		return GetMWCarData(pThis)->AERO_COEFFICIENT;
 	}
 	float __thiscall GetStaticGripForSpeed(uintptr_t ptr, float f) { // todo
 		ICHASSIS_FUNCTION_LOG("GetStaticGripForSpeed");
