@@ -267,6 +267,8 @@ std::vector<float> UNDERCOVER_YawControl = { 0.1, 0.2, 0.65, 1 };
 
 #define GET_FAKE_INTERFACE(base, type, var) { auto ptr = (uintptr_t)this; ptr += offsetof(base, var); return (type*)ptr; }
 
+auto dtor_simobject = (void(__thiscall*)(void*))0x7BC8A0;
+
 #include "MWCarTuning.h"
 #include "decomp/AverageWindow.h"
 #include "decomp/EngineRacer.h"
@@ -343,6 +345,8 @@ void DebugMenu() {
 			DrawMenuOption(std::format("CARSLOTID_SUSPENSION_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_SUSPENSION_PACKAGE].kit_num));
 			DrawMenuOption(std::format("CARSLOTID_TIRE_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_TIRE_PACKAGE].kit_num));
 
+			DrawMenuOption(std::format("pEngine {:X}", (uintptr_t)pEngine));
+			DrawMenuOption(std::format("ITransmission {:X}", (uintptr_t)pEngine->GetITransmission()));
 			DrawMenuOption(std::format("mGear {}", pEngine->mGear));
 			DrawMenuOption(std::format("GetTopGear {}", (int)pEngine->GetTopGear()));
 			DrawMenuOption(std::format("mTransmissionVelocity {:.2f}", pEngine->mTransmissionVelocity));
@@ -456,12 +460,21 @@ void DebugMenu() {
 }
 
 auto oldctorbase = (void*(__thiscall*)(void*, BehaviorParams*, int))0x6DB670;
-SuspensionRacer* ChassisHumanConstructHooked(BehaviorParams* bp) {
-	auto data = pSuspension = (SuspensionRacer*)gFastMem.Alloc(sizeof(SuspensionRacer), nullptr);
-	memset(data,0,sizeof(SuspensionRacer));
-	oldctorbase(data, bp, 0);
-	data->Create(*bp);
-	return data;
+auto oldctorchassis = (void*(__thiscall*)(void*, BehaviorParams*, SuspensionParams*))0x73CEA0;
+SuspensionRacer* ChassisHumanConstructHooked(BehaviorParams* bp, SuspensionParams* sp) {
+	auto simable = bp->fowner->Object.Find<ISimable>();
+	if (simable->mCOMObject->Find<IVehicle>()->GetDriverClass() == DRIVER_HUMAN) {
+		auto data = pSuspension = (SuspensionRacer*)gFastMem.Alloc(sizeof(SuspensionRacer), nullptr);
+		memset(data,0,sizeof(SuspensionRacer));
+		oldctorbase(data, bp, 0);
+		data->Create(*bp);
+		return data;
+	}
+	else {
+		auto data = (SuspensionRacer*)gFastMem.Alloc(0x12E0, nullptr);
+		oldctorchassis(data, bp, sp);
+		return data;
+	}
 }
 
 auto oldctorengine = (void*(__thiscall*)(void*, BehaviorParams*))0x73A9D0;
@@ -533,6 +546,16 @@ void __thiscall GetAttribHooked(Attrib::Instance* pThis, Attrib::Collection* col
 	}
 }
 
+float __thiscall GetMaxSpeedometerHooked(ITransmission* pThis) {
+	WriteLog(std::format("GetMaxSpeedometer {:X} from {:X}", (uintptr_t)pThis, (uintptr_t)__builtin_return_address(0)));
+	auto ptr = (uintptr_t)pThis;
+	ptr -= 0x44;
+	if (*(uint32_t*)ptr < 0x1000) {
+		WriteLog(std::format("BAD GetMaxSpeedometer {:X} from {:X}", (uintptr_t)pThis, (uintptr_t)__builtin_return_address(0)));
+	}
+	return 100.0;
+}
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 	switch( fdwReason ) {
 		case DLL_PROCESS_ATTACH: {
@@ -578,6 +601,11 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73EBF0, &EngineRacerConstructHooked); // Engine, this is what the player uses
 			//NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x73EC60, &EngineRacerConstructHooked); // EngineRacer
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x462C80, &GetAttribHooked);
+
+			// disable simple physics
+			//NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x425E20, 0x425F2A);
+
+			//NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x700720, &GetMaxSpeedometerHooked);
 
 			// AIVehicle::GetOverSteerCorrection, disable road surface getter during race cutscenes
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x40AAC8, 0x40AB89);

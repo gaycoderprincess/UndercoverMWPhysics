@@ -1878,6 +1878,9 @@ void SuspensionRacer::dtor(char a2) {
 		WriteLog("delete mTires[i]");
 		delete mTires[i];
 	}
+
+	dtor_simobject(this); // frees the interface list
+
 	if ((a2 & 1) != 0) {
 		WriteLog("gFastMem.Free");
 		gFastMem.Free(this, sizeof(SuspensionRacer), nullptr);

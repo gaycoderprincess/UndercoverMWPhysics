@@ -137,6 +137,8 @@ void EngineRacer::dtor(char a2) {
 	//	Attrib::Collection::Release(mCarInfo.mCollection, 0);
 	//}
 
+	dtor_simobject(this); // frees the interface list
+
 	if ((a2 & 1) != 0) {
 		WriteLog("gFastMem.Free");
 		gFastMem.Free(this, sizeof(EngineRacer), nullptr);
@@ -375,7 +377,6 @@ ShiftPotential EngineRacer::FindShiftPotential(GearID gear, float rpm, float rpm
 }
 
 ShiftPotential EngineRacer::UpdateShiftPotential(GearID gear, float rpm, float rpmFromGround) {
-	ENGINERACER_FUNCTION_LOG("UpdateShiftPotential");
 	return FindShiftPotential(gear, rpm, rpmFromGround);
 }
 
@@ -625,8 +626,6 @@ static const float Tweak_MaxNOSDischargeCheat = 0.5f;
 
 // Credits: Brawltendo
 float EngineRacer::DoNos(const Physics::Tunings *tunings, float dT, bool engaged) {
-	ENGINERACER_FUNCTION_LOG("DoNos");
-
 	if (!HasNOS())
 		return 1.0f;
 
@@ -735,8 +734,6 @@ void EngineRacer::DoInduction(const Physics::Tunings *tunings, float dT) {
 
 // Credits: Brawltendo
 float EngineRacer::DoThrottle(float dT) {
-	ENGINERACER_FUNCTION_LOG("DoThrottle");
-
 	if (IsBlown() || !mIInput) {
 		// cut the throttle when the engine is blown
 		return 0.0f;

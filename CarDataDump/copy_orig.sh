@@ -60,6 +60,8 @@ cp orig_mw_full/copgto.conf cop_car_mus_08.conf
 cp orig_mw_full/copgto.conf cop_car_mus_08_top.conf
 cp orig_mw_full/mustanggt.conf cop_car_mus_08_m22.conf
 cp orig_mw_full/mustanggt_top.conf cop_car_mus_08_m22_top.conf
+cp orig_mw_full/copsport.conf cop_car_por_06.conf
+cp orig_mw_full/copsport.conf cop_car_por_06_top.conf
 cp orig_mw_full/copsuv.conf cop_car_suv_04.conf
 cp orig_mw_full/copsuv.conf cop_car_suv_04_top.conf
 cp orig_cb_full/challengern.conf dod_cha_con_06.conf
@@ -196,6 +198,8 @@ cp orig_cb_full/zonda.conf pag_zon_f_06_m30.conf
 cp orig_cb_full/zonda_top.conf pag_zon_f_06_m30_top.conf
 cp orig_mw_full/911turbo.conf player_cop_car_911_tur_06.conf
 cp orig_mw_full/911turbo_top.conf player_cop_car_911_tur_06_top.conf
+cp orig_mw_full/911turbo.conf cop_car_por_06_mission.conf
+cp orig_mw_full/911turbo_top.conf cop_car_por_06_mission_top.conf
 cp orig_mw_full/viper.conf player_cop_car_mid_05.conf
 cp orig_mw_full/viper_top.conf player_cop_car_mid_05_top.conf
 cp orig_mw_full/mustanggt.conf player_cop_car_mus_08.conf
