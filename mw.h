@@ -97,3 +97,69 @@ struct Wheel {
 	float mSurfaceStick;
 	UMath::Vector4 mIntegral;
 };
+
+struct Attrib::Private {
+	unsigned char mData[8];
+};
+
+struct Attrib::Gen::engine::_LayoutStruct {
+	Attrib::Private _Array_TORQUE;
+	float TORQUE[9];
+	Attrib::Private _Array_SPEED_LIMITER;
+	float SPEED_LIMITER[2];
+	Attrib::Private _Array_ENGINE_BRAKING;
+	float ENGINE_BRAKING[3];
+	float FLYWHEEL_MASS;
+	float MAX_RPM;
+	float RED_LINE;
+	float IDLE;
+};
+
+struct Attrib::Gen::engine {
+	uint8_t _0[0x8];
+	Attrib::Gen::engine::_LayoutStruct* mLayoutPtr;
+};
+
+struct Attrib::Gen::induction::_LayoutStruct {
+	float LOW_BOOST;
+	float SPOOL_TIME_DOWN;
+	float VACUUM;
+	float SPOOL;
+	float SPOOL_TIME_UP;
+	float PSI;
+	float HIGH_BOOST;
+};
+
+struct Attrib::Gen::induction {
+	uint8_t _0[0x8];
+	Attrib::Gen::induction::_LayoutStruct* mLayoutPtr;
+};
+
+struct Attrib::StringKey {
+	unsigned long long mHash64;
+	unsigned int mHash32;
+	const char* mString;
+};
+
+struct Attrib::Gen::pvehicle::_LayoutStruct {
+	UMath::Vector4 TENSOR_SCALE;
+	Attrib::StringKey MODEL;
+	const char* DefaultPresetRide;
+	const char* CollectionName;
+	int engine_upgrades;
+	int transmission_upgrades;
+	int nos_upgrades;
+	int brakes_upgrades;
+	float MASS;
+	int tires_upgrades;
+	int VerbalType;
+	int induction_upgrades;
+	int chassis_upgrades;
+	unsigned char HornType;
+	unsigned char TrafficEngType;
+};
+
+struct Attrib::Gen::pvehicle {
+	uint8_t _0[0x8];
+	Attrib::Gen::pvehicle::_LayoutStruct* mLayoutPtr;
+};

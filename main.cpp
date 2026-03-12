@@ -253,10 +253,12 @@ std::vector<float> UNDERCOVER_YawControl = { 0.1, 0.2, 0.65, 1 };
 
 #include "MWCarTuning.h"
 #include "decomp/AverageWindow.h"
+#include "decomp/EngineRacer.h"
 #include "decomp/SuspensionRacer.h"
 #include "MWCarTuning.cpp"
 #include "decomp/MWChassis.cpp"
 #include "decomp/SuspensionRacer.cpp"
+#include "decomp/EngineRacer.cpp"
 
 void ValueEditorMenu(float& value) {
 	ChloeMenuLib::BeginMenu();

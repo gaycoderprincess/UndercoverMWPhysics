@@ -404,19 +404,13 @@ float SuspensionRacer::Tire::UpdateLoaded(float lat_vel, float fwd_vel, float bo
 	return mLateralForce;
 }
 
-float WheelDiameter(const Attrib::Gen::car_tuning &tires, bool front) {
-	int axle = front ? 0 : 1;
-	float diameter = INCH2METERS(tires.GetLayout()->RIM_SIZE.At(axle));
-	return diameter + tires.GetLayout()->SECTION_WIDTH.At(axle) * 0.001f * 2.0f * (tires.GetLayout()->ASPECT_RATIO.At(axle) * 0.01f);
-}
-
 void SuspensionRacer::CreateTires() {
 	FUNCTION_LOG("SuspensionRacer::CreateTires");
 
 	for (int i = 0; i < 4; ++i) {
 		delete mTires[i];
 		bool is_front = IsFront(i);
-		float diameter = WheelDiameter(mCarInfo, is_front);
+		float diameter = Physics::Info::WheelDiameter(mCarInfo, is_front);
 		mTires[i] = new Tire(diameter * 0.5f, i, &mCarInfo, mVehicle);
 	}
 	UMath::Vector3 dimension;

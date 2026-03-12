@@ -59,6 +59,16 @@ struct MWCarTuning {
 	float DIFFERENTIAL[3];
 	float TORQUE_SPLIT;
 
+	// engine
+	std::vector<float> TORQUE; // todo
+
+	// nos
+	float RECHARGE_MAX = 30;
+	float RECHARGE_MAX_SPEED = 100;
+	float RECHARGE_MIN = 50;
+	float RECHARGE_MIN_SPEED = 50;
+	float NOS_DISENGAGE = 2.0;
+
 	// pvehicle
 	float TENSOR_SCALE[3];
 };
@@ -133,6 +143,13 @@ MWCarTuning* LoadCarTuningFromFile(std::string configCarName) {
 	tmp.DIFFERENTIAL[1] = config["transmission"]["DIFFERENTIAL"][1].value_or(1.0);
 	tmp.DIFFERENTIAL[2] = config["transmission"]["DIFFERENTIAL"][2].value_or(1.0);
 	tmp.TORQUE_SPLIT = config["transmission"]["TORQUE_SPLIT"].value_or(0.5);
+
+	// engine
+	for (int i = 0; i < 32; i++) {
+		float f = config["engine"]["TORQUE"][i].value_or(-0.011f);
+		if (f == -0.011f) break;
+		tmp.TORQUE.push_back(f);
+	}
 
 	// pvehicle
 	tmp.TENSOR_SCALE[0] = config["pvehicle"]["TENSOR_SCALE"][0].value_or(-0.011f);
@@ -287,9 +304,12 @@ void InitMWCarTunings() {
 }
 
 class SuspensionRacer;
+class EngineRacer;
 
 #ifdef SUSPENSIONRACER_ELISE_TEST
 MWCarTuning* GetMWCarData(const SuspensionRacer* pThis);
+MWCarTuning* GetMWCarData(const EngineRacer* pThis);
 #else
 Attrib::Gen::car_tuning::_LayoutStruct* GetMWCarData(const SuspensionRacer* pThis);
+Attrib::Gen::car_tuning::_LayoutStruct* GetMWCarData(const EngineRacer* pThis);
 #endif

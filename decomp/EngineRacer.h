@@ -1,0 +1,619 @@
+enum eTireIdx {
+	TIRE_FL,
+	TIRE_FR,
+	TIRE_MAX_FRONT = 2,
+	TIRE_RR = 2,
+	TIRE_RL,
+	TIRE_MAX,
+};
+
+inline unsigned int UTIL_InterprolateIndex(unsigned int last_index, float value, float limit_min, float limit_max, float &ratio) {
+	float value_range = limit_max - limit_min;
+	float value_offset = value - limit_min;
+	ratio = last_index * value_offset / value_range;
+	unsigned int index1 = static_cast<unsigned int>(ratio);
+	ratio -= index1;
+	return index1;
+}
+
+namespace Physics {
+	namespace Info {
+		enum eInductionType {
+			INDUCTION_NONE = 0,
+			INDUCTION_TURBO_CHARGER = 1,
+			INDUCTION_SUPER_CHARGER = 2,
+		};
+
+		// Credits: Brawltendo
+		float EngineInertia(const Attrib::Gen::car_tuning &engine, const bool loaded) {
+			float scale;
+			if (loaded)
+				scale = 1.f;
+			else
+				scale = 0.35f;
+			return scale * (engine.GetLayout()->FLYWHEEL_MASS * 0.025f + 0.25f);
+		}
+
+		// Credits: Brawltendo
+		eInductionType InductionType(const Attrib::Gen::car_tuning &induction) {
+			if (induction.GetLayout()->HIGH_BOOST > 0.0f || induction.GetLayout()->LOW_BOOST > 0.0f) {
+				// turbochargers don't produce significant boost until above the boost threshold (the lowest engine RPM at which it will spool up)
+				// meanwhile superchargers apply boost proportionally to the engine RPM, so this param isn't needed there
+				if (induction.GetLayout()->SPOOL > 0.0f) {
+					return INDUCTION_TURBO_CHARGER;
+				} else {
+					return INDUCTION_SUPER_CHARGER;
+				}
+			} else {
+				return INDUCTION_NONE;
+			}
+		}
+
+		float Torque(MWCarTuning* tuning, const Attrib::Gen::car_tuning &engine, float rpm) {
+			float rpm_min = engine.GetLayout()->IDLE;
+			float rpm_max = engine.GetLayout()->MAX_RPM;
+			rpm = UMath::Clamp(rpm, engine.GetLayout()->IDLE, engine.GetLayout()->RED_LINE);
+			unsigned int numpts = tuning->TORQUE.size();
+			if (numpts > 1) {
+				float ratio;
+				unsigned int index = UTIL_InterprolateIndex(numpts - 1, rpm, rpm_min, rpm_max, ratio);
+				float power = tuning->TORQUE[index];
+				unsigned int secondIndex = UMath::Min(numpts - 1, index + 1);
+				return UMath::Lerp(power, tuning->TORQUE[secondIndex], ratio);
+			}
+
+			return 0.0f;
+		}
+
+		float WheelDiameter(const Attrib::Gen::car_tuning &tires, bool front) {
+			int axle = front ? 0 : 1;
+			float diameter = INCH2METERS(tires.GetLayout()->RIM_SIZE.At(axle));
+			return diameter + tires.GetLayout()->SECTION_WIDTH.At(axle) * 0.001f * 2.0f * (tires.GetLayout()->ASPECT_RATIO.At(axle) * 0.01f);
+		}
+
+		// Credits: Brawltendo
+		float NosBoost(const Attrib::Gen::car_tuning &nos, const Tunings *tunings) {
+			float torque_scale = 1.0f;
+			float boost = nos.GetLayout()->TORQUE_BOOST;
+			if (tunings) {
+				boost += boost * tunings->Value[Physics::Tunings::NOS] * 0.25f;
+			}
+			return boost + torque_scale;
+		}
+
+		// Credits: Brawltendo
+		float NosCapacity(const Attrib::Gen::car_tuning &nos, const Tunings *tunings) {
+			float capacity = nos.GetLayout()->NOS_CAPACITY;
+			if (tunings) {
+				capacity -= capacity * tunings->Value[Physics::Tunings::NOS] * 0.25f;
+			}
+			return capacity;
+		}
+
+		// Credits: Brawltendo
+		Mps Speedometer(const Attrib::Gen::car_tuning &engine, Rpm rpm, GearID gear, const Tunings *tunings) {
+			float speed = 0.0f;
+			float gear_ratio = engine.GetLayout()->GEAR_RATIO[gear] * engine.GetLayout()->FINAL_GEAR;
+			float power_range = engine.GetLayout()->RED_LINE - engine.GetLayout()->IDLE;
+			gear_ratio = UMath::Abs(gear_ratio);
+			if (gear_ratio > 0.0f && power_range > 0.0f) {
+				float wheelrear = WheelDiameter(engine, false) * 0.5f;
+				float wheelfront = WheelDiameter(engine, true) * 0.5f;
+				float avg_wheel_radius = (wheelrear + wheelfront) * 0.5f;
+				float clutch_rpm = (rpm - engine.GetLayout()->IDLE) / gear_ratio / power_range * engine.GetLayout()->RED_LINE;
+				speed = RPM2RPS(clutch_rpm) * avg_wheel_radius;
+			}
+
+			float limiter = MPH2MPS(engine.GetLayout()->SPEED_LIMITER[0]);
+			if (limiter > 0.0f) {
+				speed = UMath::Min(speed, limiter);
+			}
+
+			return speed;
+		}
+
+		// Credits: Brawltendo
+		float InductionRPM(const Attrib::Gen::car_tuning &engine, const Tunings *tunings) {
+			float spool = engine.GetLayout()->SPOOL;
+
+			// tune the (normalized) RPM at which forced induction kicks in
+			if (tunings && spool > 0.0f) {
+				float range;
+				float value = tunings->Value[Physics::Tunings::INDUCTION];
+				if (value < 0.0f) {
+					range = spool * 0.25f;
+				} else {
+					range = (1.0f - spool) * 0.25f;
+				}
+				spool += range * value;
+			}
+
+			// return the unnormalized RPM
+			return spool * (engine.GetLayout()->RED_LINE - engine.GetLayout()->IDLE) + engine.GetLayout()->IDLE;
+		}
+
+		// Credits: Brawltendo
+		float InductionBoost(const Attrib::Gen::car_tuning &engine, float rpm, float spool, const Tunings *tunings, float *psi) {
+			if (psi) {
+				*psi = 0.0f;
+			}
+
+			spool = UMath::Clamp(spool, 0.0f, 1.0f);
+			float rpm_min = engine.GetLayout()->IDLE;
+			float rpm_max = engine.GetLayout()->RED_LINE;
+			float induction_boost = 0.f;
+			float spool_rpm = InductionRPM(engine, tunings);
+			float high_boost = engine.GetLayout()->HIGH_BOOST;
+			float low_boost = engine.GetLayout()->LOW_BOOST;
+			float drag = engine.GetLayout()->VACUUM;
+
+			if (high_boost > 0.0f || low_boost > 0.0f) {
+				// tuning slider adjusts the induction boost bias
+				// -tuning produces more low end boost, while +tuning produces more high end boost
+				if (tunings) {
+					float value = tunings->Value[Physics::Tunings::INDUCTION];
+					low_boost -= low_boost * value * 0.25f;
+					high_boost += high_boost * value * 0.25f;
+				}
+
+				if (rpm >= spool_rpm) {
+					float induction_ratio = UMath::Ramp(rpm, spool_rpm, rpm_max);
+					induction_boost = induction_ratio * high_boost + (1.0f - induction_ratio) * low_boost;
+					if (psi) {
+						*psi = spool * engine.GetLayout()->PSI * UMath::Ramp(induction_boost, 0.0f, UMath::Max(high_boost, low_boost));
+					}
+				} else if (drag < 0.0f) {
+					// apply vacuum effect when not in boost
+					float drag_ratio = UMath::Ramp(rpm, rpm_min, spool_rpm);
+					induction_boost = drag_ratio * drag;
+					if (psi) {
+						*psi = drag_ratio * -engine.GetLayout()->PSI * UMath::Ramp(-induction_boost, 0.0f, UMath::Max(high_boost, low_boost));
+					}
+				}
+			}
+
+			return induction_boost * spool;
+		}
+
+		// Credits: Brawltendo
+		bool ShiftPoints(MWCarTuning* mw, const Attrib::Gen::car_tuning &tuning, float *shift_up,
+										float *shift_down, unsigned int numpts) {
+			for (int i = 0; i < numpts; ++i) {
+				shift_up[i] = 0.0f;
+				shift_down[i] = 0.0f;
+			}
+
+			unsigned int num_gear_ratios = tuning.GetLayout()->_Array_GEAR_RATIO.GetLength();
+			if (numpts < num_gear_ratios)
+				return false;
+
+			float redline = tuning.GetLayout()->RED_LINE;
+			int topgear = num_gear_ratios - 1;
+			int j;
+			for (j = G_FIRST; j < topgear; ++j) {
+				float g1 = tuning.GetLayout()->GEAR_RATIO[j];
+				float g2 = tuning.GetLayout()->GEAR_RATIO[j + 1];
+				float rpm = (redline + tuning.GetLayout()->IDLE) * 0.5f;
+				float max = rpm;
+				int flag = 0;
+
+				if (rpm < redline) {
+					// find the upshift RPM for this gear using predicted engine torque
+					while (!flag) {
+						// seems like the rpm and spool params are swapped in both instances
+						// so either it's a mistake that was copy-pasted or it was a deliberate choice
+						float currenttorque = Torque(mw, tuning, max) * (InductionBoost(tuning, 1.0f, max, NULL, NULL) + 1.0f);
+						float shiftuptorque;
+						if (UMath::Abs(g1) > 0.00001f) {
+							float ratio = g2 / g1;
+							float next_rpm = ratio * max;
+							shiftuptorque = Torque(mw, tuning, next_rpm) * (InductionBoost(tuning, 1.0f, next_rpm, NULL, NULL) + 1.0f) * g2 / g1;
+						} else {
+							shiftuptorque = 0.0f;
+						}
+
+						// set the upshift RPM to the current max
+						if (shiftuptorque > currenttorque)
+							break;
+
+						max += 50.0f;
+						// set the upshift RPM to the redline RPM
+						flag = !(max < redline);
+					}
+					if (!flag) {
+						shift_up[j] = max;
+					}
+				} else {
+					flag = 1;
+				}
+				if (flag) {
+					shift_up[j] = redline - 100.0f;
+				}
+
+				// calculate downshift RPM for the next gear
+				if (UMath::Abs(g1) > 0.00001f) {
+					shift_down[j + 1] = (g2 / g1) * shift_up[j];
+				} else {
+					shift_down[j + 1] = 0.0f;
+				}
+			}
+
+			shift_up[topgear] = tuning.GetLayout()->RED_LINE;
+			return true;
+		}
+
+		float MaxInductedTorque(MWCarTuning* mw, Attrib::Gen::car_tuning &engine, Rpm &atrpm, const Tunings *tunings) {
+			if (mw->TORQUE.size() > 1)  {
+				auto v9 = 0.0;
+				atrpm = engine.GetLayout()->IDLE;
+				auto v11 = engine.GetLayout();
+				auto v12 = v11->IDLE;
+				auto v13 = ((v11->MAX_RPM - v11->IDLE) / (mw->TORQUE.size() - 1));
+				int v10 = 0;
+				while (v10 < mw->TORQUE.size()) {
+					auto v18 = (mw->TORQUE[v10] * (Physics::Info::InductionBoost(engine, v12, 1.0, tunings, nullptr) + 1.0));
+					if (v18 > v9) {
+						atrpm = v12;
+						v9 = v18;
+					}
+					v12 = (v12 + v13);
+					++v10;
+				}
+				auto v20 = engine.GetLayout()->RED_LINE;
+				if (atrpm < v20)
+					v20 = atrpm;
+				auto v21 = v20;
+				if (engine.GetLayout()->IDLE > v20)
+					v21 = engine.GetLayout()->IDLE;
+				atrpm = v21;
+				return v9;
+			} else {
+				atrpm = engine.GetLayout()->IDLE;
+			}
+			return 0.0;
+		}
+
+		float MaxInductedPower(MWCarTuning* mw, Attrib::Gen::car_tuning& engine, const Tunings* tunings) {
+			if (mw->TORQUE.size() > 1)  {
+				float v11 = 0.0;
+				auto v12 = engine.GetLayout()->IDLE;
+				auto v15 = ((engine.GetLayout()->MAX_RPM - engine.GetLayout()->IDLE) / (mw->TORQUE.size() - 1));
+				int v13 = 0;
+				while (v13 < mw->TORQUE.size())  {
+					auto v20 = (Physics::Info::InductionBoost(engine, v12, 1.0, tunings, nullptr) + 1.0);
+					if ( (((mw->TORQUE[v13] * v20) * v12) * 0.00019040366) > v11 )
+						v11 = (((mw->TORQUE[v13] * v20) * v12) * 0.00019040366);
+					v12 = (v12 + v15);
+					++v13;
+				}
+				return v11;
+			}
+			return 0.0;
+		}
+	}
+}
+
+class EngineRacer : public VehicleBehavior {
+  public:
+	struct Clutch {
+	  public:
+		enum State { ENGAGED, ENGAGING, DISENGAGED };
+
+		Clutch() {
+			mState = ENGAGED;
+			mTime = 0.0f;
+			mEngageTime = 0.0f;
+		}
+
+		void Disengage() {
+			if (mState == ENGAGED) {
+				mState = DISENGAGED;
+			}
+		}
+
+		void Engage(float time) {
+			if (mState == DISENGAGED) {
+				if (time > 0.0f) {
+					mState = ENGAGING;
+				} else {
+					mState = ENGAGED;
+				}
+				mTime = time;
+				mEngageTime = time;
+			}
+		}
+
+		void Reset() {
+			mState = ENGAGED;
+			mTime = 0.0f;
+		}
+
+		float Update(float dT) {
+			if (mTime > 0.0f) {
+				mTime -= dT;
+				if (mTime <= 0.0f && mState == ENGAGING) {
+					mState = ENGAGED;
+				}
+			}
+
+			switch (mState) {
+				case DISENGAGED:
+					return 0.25f;
+				case ENGAGING:
+					return 1.0f - UMath::Ramp(mTime, 0.0f, mEngageTime) * 0.75f;
+				case ENGAGED:
+					return 1.0f;
+				default:
+					return 1.0f;
+			}
+		}
+
+		State GetState() {
+			return mState;
+		}
+
+		State mState;
+		float mTime;
+		float mEngageTime;
+	};
+
+	ISimable* GetOwner() const {
+		return Behavior::mIOwner;
+	}
+
+	IVehicle* GetVehicle() const {
+		return mVehicle;
+	}
+
+	void Create(const BehaviorParams &bp);
+	GearID GuessGear(float speed) const;
+	float GuessRPM(float speed, GearID atgear) const;
+	ShiftPotential FindShiftPotential(GearID gear, float rpm) const;
+	float GetDifferentialAngularVelocity(bool locked) const;
+	float GetDriveWheelSlippage() const;
+	void SetDifferentialAngularVelocity(float w);
+	float CalcSpeedometer(float rpm, unsigned int gear) const;
+	void LimitFreeWheels(float w);
+	float GetBrakingTorque(float engine_torque, float rpm) const;
+	void CalcShiftPoints();
+	bool DoGearChange(GearID gear, bool automatic);
+	void AutoShift();
+
+	void dtor(char a2);
+
+	// IEngine
+	void MatchSpeed(float speed);
+	float GetHorsePower() const;
+
+	// Behavior
+	void Reset();
+	void OnTaskSimulate(float dT);
+	void OnBehaviorChange(const UCrc32 &mechanic);
+
+	// ITransmission
+	float GetSpeedometer() const;
+	float GetMaxSpeedometer() const;
+	float GetShiftPoint(GearID from_gear, GearID to_gear) const;
+
+	// IAttributeable
+	void OnAttributeChange(const Attrib::Collection *collection, unsigned int attribkey);
+
+	// ITiptronic
+	bool SportShift(GearID gear);
+
+	// IEngineDamage
+	void Sabotage(float time);
+	bool Blow();
+
+	// IRaceEngine
+	// Credits: Brawltendo
+	float GetPerfectLaunchRange(float &range) {
+		// perfect launch only applies to first gear
+		if (mGear != G_FIRST) {
+			range = 0.0f;
+			return 0.0f;
+		} else {
+			range = (mCarInfo.GetLayout()->RED_LINE - mCarInfo.GetLayout()->IDLE) * 0.25f;
+			float upper_limit = mCarInfo.GetLayout()->RED_LINE + 500.0f;
+			return UMath::Min(mPeakTorqueRPM + range, upper_limit) - range;
+		}
+	}
+
+	// IEngine
+	float GetMaxHorsePower() const {
+		return mMaxHP;
+	}
+	Hp GetMinHorsePower() const {
+		return FTLB2HP(Physics::Info::Torque(GetMWCarData(this), mCarInfo, mCarInfo.GetLayout()->IDLE) * mCarInfo.GetLayout()->IDLE, 1.0f);
+	}
+	float GetRPM() const {
+		return mRPM;
+	}
+	float GetMaxRPM() const {
+		return mCarInfo.GetLayout()->MAX_RPM;
+	}
+	float GetPeakTorqueRPM() const {
+		return mPeakTorqueRPM;
+	}
+	float GetRedline() const {
+		return mCarInfo.GetLayout()->RED_LINE;
+	}
+	float GetMinRPM() const {
+		return mCarInfo.GetLayout()->IDLE;
+	}
+	float GetNOSCapacity() const {
+		return mNOSCapacity;
+	}
+	float GetNOSBoost() const {
+		return mNOSBoost;
+	}
+	bool IsNOSEngaged() const {
+		return mNOSEngaged >= 1.0f;
+	}
+	bool HasNOS() const {
+		return mCarInfo.GetLayout()->NOS_CAPACITY > 0.0f && mCarInfo.GetLayout()->TORQUE_BOOST > 0.0f;
+	}
+	float GetNOSFlowRate() const {
+		return mCarInfo.GetLayout()->FLOW_RATE;
+	}
+
+	void ChargeNOS(float charge) {
+		if (HasNOS()) {
+			mNOSCapacity = UMath::Clamp(mNOSCapacity + charge, 0.0f, 1.0f);
+		}
+	}
+
+	bool IsEngineBraking() {
+		return mEngineBraking;
+	}
+	bool IsShiftingGear() {
+		return mGearShiftTimer > 0.0f;
+	}
+	bool IsReversing() const {
+		return mGear == G_REVERSE;
+	}
+
+	// IInductable
+	Physics::Info::eInductionType InductionType() const {
+		return Physics::Info::InductionType(mCarInfo);
+	}
+	float GetInductionPSI() const {
+		return mPSI;
+	}
+	float InductionSpool() const {
+		return mSpool;
+	}
+	float GetMaxInductionPSI() const {
+		return mCarInfo.GetLayout()->PSI;
+	}
+
+	// IEngineDamage
+	bool IsBlown() const {
+		return mBlown;
+	}
+	void Repair() {
+		mSabotage = 0.0f;
+		mBlown = false;
+	}
+	bool IsSabotaged() const {
+		return mSabotage > 0.0f;
+	}
+
+	// ITransmission
+	float GetDriveTorque() const {
+		return mDriveTorque;
+	}
+	GearID GetTopGear() const {
+		return (GearID)(GetNumGearRatios() - 1);
+	}
+	GearID GetGear() const {
+		return (GearID)mGear;
+	}
+	bool IsGearChanging() const {
+		return mGearShiftTimer > 0.0f;
+	}
+
+	bool Shift(GearID gear) {
+		return DoGearChange(gear, false);
+	}
+	ShiftStatus GetShiftStatus() const {
+		return mShiftStatus;
+	}
+	ShiftPotential GetShiftPotential() const {
+		return mShiftPotential;
+	}
+
+	ShiftStatus OnGearChange(GearID gear);
+	bool UseRevLimiter() const {
+		return true;
+	}
+	void DoECU();
+	float DoThrottle();
+	void DoInduction(const Physics::Tunings *tunings, float dT);
+	float DoNos(const Physics::Tunings *tunings, float dT, bool engaged);
+	void DoShifting(float dT);
+	ShiftPotential UpdateShiftPotential(GearID gear, float rpm);
+	float GetEngineTorque(float rpm) const;
+
+	// Inlines
+	unsigned int GetNumGearRatios() const {
+		return mCarInfo.GetLayout()->_Array_GEAR_RATIO.GetLength();
+	}
+
+	float GetGearRatio(unsigned int idx) const {
+		return mCarInfo.GetLayout()->GEAR_RATIO[idx];
+	}
+
+	float GetGearEfficiency(unsigned int idx) const {
+		return mCarInfo.GetLayout()->GEAR_EFFICIENCY[idx];
+	}
+
+	float GetFinalGear() const {
+		return mCarInfo.GetLayout()->FINAL_GEAR;
+	}
+
+	float GetRatioChange(unsigned int from, unsigned int to) const {
+		float ratio1 = mCarInfo.GetLayout()->GEAR_RATIO[from];
+		float ratio2 = mCarInfo.GetLayout()->GEAR_RATIO[to];
+
+		if (ratio1 > 0.0f && ratio2 > FLOAT_EPSILON) {
+			return ratio1 / ratio2;
+		} else {
+			return 0.0f;
+		}
+	}
+
+	float GetShiftDelay(unsigned int gear) const {
+		return mCarInfo.GetLayout()->SHIFT_SPEED * GetGearRatio(gear);
+	}
+
+	bool RearWheelDrive() const {
+		return mCarInfo.GetLayout()->TORQUE_SPLIT < 1.0f;
+	}
+
+	bool FrontWheelDrive() const {
+		return mCarInfo.GetLayout()->TORQUE_SPLIT > 0.0f;
+	}
+
+	float GetShiftUpRPM(int gear) const {
+		return mShiftUpRPM[gear];
+	}
+
+	float GetShiftDownRPM(int gear) const {
+		return mShiftDownRPM[gear];
+	}
+
+	float GetCatchupCheat() const { return 0.0; }
+
+  private:
+	float mDriveTorque;									  // offset 0x84, size 0x4
+	int mGear;											   // offset 0x88, size 0x4
+	float mGearShiftTimer;								   // offset 0x8C, size 0x4
+	float mThrottle;										 // offset 0x90, size 0x4
+	float mSpool;											// offset 0x94, size 0x4
+	float mPSI;											  // offset 0x98, size 0x4
+	float mInductionBoost;								   // offset 0x9C, size 0x4
+	float mShiftUpRPM[10];								   // offset 0xA0, size 0x28
+	float mShiftDownRPM[10];								 // offset 0xC8, size 0x28
+	float mAngularVelocity;								  // offset 0xF0, size 0x4
+	float mAngularAcceleration;							  // offset 0xF4, size 0x4
+	float mTransmissionVelocity;							 // offset 0xF8, size 0x4
+	float mNOSCapacity;									  // offset 0xFC, size 0x4
+	float mNOSBoost;										 // offset 0x100, size 0x4
+	float mNOSEngaged;									   // offset 0x104, size 0x4
+	float mClutchRPMDiff;									// offset 0x108, size 0x4
+	bool mEngineBraking;									 // offset 0x10C, size 0x1
+	float mSportShifting;									// offset 0x110, size 0x4
+	IInput *mIInput;										 // offset 0x114, size 0x4
+	IChassis *mSuspension;								// offset 0x118, size 0x4
+	Attrib::Gen::car_tuning mCarInfo;
+	float mRPM;											  // offset 0x184, size 0x4
+	ShiftStatus mShiftStatus;								// offset 0x188, size 0x4
+	ShiftPotential mShiftPotential;						  // offset 0x18C, size 0x4
+	float mPeakTorque;									   // offset 0x190, size 0x4
+	float mPeakTorqueRPM;									// offset 0x194, size 0x4
+	float mMaxHP;											// offset 0x198, size 0x4
+	struct Clutch mClutch;								   // offset 0x19C, size 0xC
+	bool mBlown;											 // offset 0x1A8, size 0x1
+	float mSabotage;										 // offset 0x1AC, size 0x4
+};
