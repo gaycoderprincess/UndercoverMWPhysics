@@ -469,9 +469,12 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 				for (const auto& entry : std::filesystem::directory_iterator("CarDataDump")) {
 					if (entry.is_directory()) continue;
 
-					auto tuning = LoadCarTuningFromFile(entry.path().filename().string());
+					auto filename = entry.path().filename().string();
+					if (!filename.ends_with(".conf")) continue;
+
+					auto tuning = LoadCarTuningFromFile(filename);
 					if (!tuning) {
-						WriteLog(std::format("Failed to load {}", entry.path().filename().string()));
+						WriteLog(std::format("Failed to load {}", filename));
 						continue;
 					}
 
