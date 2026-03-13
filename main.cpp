@@ -129,7 +129,6 @@ namespace UMath {
 		}
 	}
 
-	// todo is this correct
 	void UnitCross(Vector3 a, Vector3 b, Vector3 &r) {
 		r.x = a.y * b.z - a.z * b.y;
 		r.y = a.z * b.x - a.x * b.z;
@@ -176,11 +175,9 @@ namespace UMath {
 	}
 
 	inline void Rotate(Vector3 a, Matrix4 m, Vector3 &r) {
-		Vector3 temp = a;
-
-		r.x = m.x.x * temp.x + m.y.x * temp.y + m.z.x * temp.z;
-		r.y = m.x.y * temp.x + m.y.y * temp.y + m.z.y * temp.z;
-		r.z = m.x.z * temp.x + m.y.z * temp.y + m.z.z * temp.z;
+		r.x = m.x.x * a.x + m.y.x * a.y + m.z.x * a.z;
+		r.y = m.x.y * a.x + m.y.y * a.y + m.z.y * a.z;
+		r.z = m.x.z * a.x + m.y.z * a.y + m.z.z * a.z;
 	}
 
 	inline void Add(const Vector3 &a, const Vector3 &b, Vector3 &r) {
@@ -336,6 +333,16 @@ void DebugMenu() {
 
 		if (pEngine) {
 			auto ply = VEHICLE_LIST::GetList(VEHICLE_PLAYERS)[0];
+
+			// engine -1.0 1.0 tune 2, -1 torque 1 horsepower
+			// suspension -1.0 1.0 tune 3, -1 soft 1 stiff
+			// drivetrain -1.0 1.0 tune 1, -1 accel 1 top speed
+			// tires -1.0 1.0 tune 4, -1 loose 1 grip
+			// nitrous -1.0 1.0 tune 0, -1 strength 1 duration
+
+			for (int i = 0; i < 32; i++) {
+				DrawMenuOption(std::format("tune {} {:.2f}", i, ply->GetCustomizations()->PhysicsTuning[i]));
+			}
 
 			DrawMenuOption(std::format("CARSLOTID_BRAKE_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_BRAKE_PACKAGE].kit_num));
 			DrawMenuOption(std::format("CARSLOTID_DRIVETRAIN_PACKAGE {}", ply->GetCustomizations()->InstalledParts[CARSLOTID_DRIVETRAIN_PACKAGE].kit_num));

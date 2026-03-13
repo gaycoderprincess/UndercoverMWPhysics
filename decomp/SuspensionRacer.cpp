@@ -664,7 +664,7 @@ void SuspensionRacer::SetCOG(float extra_bias, float extra_ride) {
 	UMath::Vector3 dim;
 	irb->GetDimension(&dim);
 
-	float fwbias = (mMWInfo->FRONT_WEIGHT_BIAS + extra_bias) * 0.01f; // todo is there no equivalent for this?
+	float fwbias = (mMWInfo->FRONT_WEIGHT_BIAS + extra_bias) * 0.01f;
 	if (mNumWheelsOnGround == 0) {
 		fwbias = 0.5f;
 	}
@@ -1132,7 +1132,6 @@ float SuspensionRacer::CalcYawControlLimit(float speed) const {
 		}
 		float percent = UMath::Min(UMath::Abs(speed) / maxspeed, 1.0f);
 
-		// todo!! these are different in uc!
 #ifdef SUSPENSIONRACER_ELISE_TEST
 		unsigned int numunits = mMWInfo->YAW_CONTROL.size();
 		if (numunits > 1) {
@@ -1726,6 +1725,67 @@ void SuspensionRacer::ComputeState(float dT, State &state) {
 	LastChassisState = state;
 }
 
+void RigidBodyDamp(IRigidBody* body, float amount) {
+	UMath::Vector3& linearVel = *(UMath::Vector3*)body->GetLinearVelocity();
+	UMath::Vector3& angularVel = *(UMath::Vector3*)body->GetAngularVelocity();
+	UMath::Vector3& force = *(UMath::Vector3*)body->GetForce();
+	UMath::Vector3& torque = *(UMath::Vector3*)body->GetTorque();
+
+	float scale = 1.0f - amount;
+	UMath::Scale(linearVel, scale, linearVel);
+	UMath::Scale(angularVel, scale, angularVel);
+	UMath::Scale(force, scale, force);
+	UMath::Scale(torque, scale, torque);
+}
+
+SuspensionRacer::SleepState SuspensionRacer::DoSleep(const State &state) {
+	if (state.flags & 1) {
+		return SS_NONE;
+	}
+	IRigidBody *irb = GetOwner()->GetRigidBody();
+	if (state.speed < 0.5f) {
+		if ((GetNumWheelsOnGround() == 4) && (state.brake_input + state.ebrake_input > 0.0f) && (state.gas_input == 0.0f)) {
+			if ((UMath::Length(state.angular_vel) < 0.25f) && (!mCollisionBody->HasHadCollision())) {
+				if (state.speed < FLOAT_EPSILON) {
+					RigidBodyDamp(mRB, 1.0f);
+				} else {
+					RigidBodyDamp(mRB, 1.0f - state.speed);
+				}
+				for (unsigned int i = 0; i < 4; ++i) {
+					GetIChassis()->SetWheelAngularVelocity(i, 0.0f);
+				}
+				return SS_ALL;
+			}
+		}
+	}
+	if (state.speed < 1.0f) {
+		if ((UMath::Length(state.angular_vel) < 0.25f) && (state.gas_input <= 0.0f)) {
+			UMath::Vector3 v = state.local_vel;
+			UMath::Vector3 w = state.local_angular_vel;
+			UMath::Vector3 f = *mRB->GetForce();
+			UMath::Vector3 t = *mRB->GetTorque();
+			irb->ConvertWorldToLocal(&f, false);
+			irb->ConvertWorldToLocal(&t, false);
+
+			v.x *= state.speed;
+			w.y *= state.speed;
+			f.x = -f.x * (1.0f - state.speed);
+			t.y = -t.y * (1.0f - state.speed);
+
+			UMath::Rotate(v, state.matrix, v);
+			UMath::Rotate(w, state.matrix, w);
+			UMath::Rotate(t, state.matrix, t);
+			UMath::Rotate(f, state.matrix, f);
+
+			irb->Resolve(&f, &t);
+			irb->SetLinearVelocity(&v);
+			irb->SetAngularVelocity(&w);
+			return SS_LATERAL;
+		}
+	}
+	return SS_NONE;
+}
+
 static const float Tweak_SteerDragReduction = 0.15f;
 static const float Tweak_GameBreakerSteerDragReduction = 0.15f;
 static const float Tweak_GameBreakerExtraGs = -2.0f;
@@ -1805,7 +1865,7 @@ void SuspensionRacer::OnTaskSimulate(float dT) {
 
 	DoTireHeat(state);
 	DoJumpStabilizer(state);
-	//DoSleep(state); // todo?
+	DoSleep(state);
 	//Chassis::OnTaskSimulate(dT);
 }
 
