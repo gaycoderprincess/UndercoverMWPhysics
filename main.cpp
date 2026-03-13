@@ -585,7 +585,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 			NyaHooks::WorldServiceHook::Init();
 			NyaHooks::WorldServiceHook::aPreFunctions.push_back(AssistLoop);
 
-			ChloeMenuLib::RegisterMenu("Debug Menu", &DebugMenu);
+			ChloeMenuLib::RegisterMenu("MW Physics Debug Menu", &DebugMenu);
 
 			NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x6F077A, &LookupBehaviorSignatureHooked);
 			NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x6F07D2, &LookupBehaviorSignatureHooked);

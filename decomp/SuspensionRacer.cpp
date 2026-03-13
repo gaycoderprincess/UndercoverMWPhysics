@@ -434,20 +434,15 @@ void SuspensionRacer::OnBehaviorChange(const UCrc32 &mechanic) {
 		GetOwner()->QueryInterface(&mTransmission);
 		GetOwner()->QueryInterface(&mEngine);
 		GetOwner()->QueryInterface(&mEngineDamage);
-		WriteLog("BEHAVIOR_MECHANIC_ENGINE");
 	} else if (mechanic.mCRC == BEHAVIOR_MECHANIC_INPUT.mHash32 || mechanic.mCRC == BEHAVIOR_MECHANIC_AI.mHash32) {
-		WriteLog("BEHAVIOR_MECHANIC_AI");
 		GetOwner()->QueryInterface(&mInput);
 		GetOwner()->QueryInterface(&mHumanAI);
 	} else if (mechanic.mCRC == BEHAVIOR_MECHANIC_DAMAGE.mHash32) {
-		WriteLog("BEHAVIOR_MECHANIC_DAMAGE");
 		GetOwner()->QueryInterface(&mSpikeDamage);
 	} else if (mechanic.mCRC == BEHAVIOR_MECHANIC_RIGIDBODY.mHash32) {
-		WriteLog("BEHAVIOR_MECHANIC_RIGIDBODY");
 		GetOwner()->QueryInterface(&mCollisionBody);
 		GetOwner()->QueryInterface(&mRB);
 	}
-	WriteLog("OnBehaviorChange finished");
 }
 
 void* NewSuspensionRacerVTable[] = {
@@ -1873,6 +1868,9 @@ void SuspensionRacer::dtor(char a2) {
 	//if (mCarInfo.mCollection) {
 	//	Attrib::Collection::Release(mCarInfo.mCollection, 0);
 	//}
+
+	mSteering.InputAverage.DeInit();
+	mSteering.InputSpeedCoeffAverage.DeInit();
 
 	for (int i = 0; i < 4; ++i) {
 		WriteLog("delete mTires[i]");

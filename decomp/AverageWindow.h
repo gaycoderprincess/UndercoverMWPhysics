@@ -62,6 +62,13 @@ public:
 		memset(pData, 0, 4 * slots);
 	}
 
+	void DeInit() {
+		if (pData && pData != SmallDataBuffer) {
+			gFastMem.Free(pData, 4*nSlots, "Average::pData");
+			pData = nullptr;
+		}
+	}
+
 	float GetValue() {
 		return fAverage;
 	}
@@ -90,6 +97,11 @@ public:
 		memset(pTimeData, 0, AllocSize);
 	}
 
+	void DeInit() {
+		DeAllocate(pTimeData, AllocSize, "AverageWindow::TimeData");
+		Average::DeInit();
+	}
+
 	float GetOldestValue() {
 		return pData[iOldestValue];
 	}
@@ -98,7 +110,6 @@ public:
 		return pTimeData[iOldestValue];
 	}
 
-	// todo this wasn't in the decomp, verify
 	void Record(const float fValue, const float fTimeNow) {
 		if (pData[nCurrentSlot] == 0.0 && pTimeData[nCurrentSlot] == 0.0) {
 			nSamples++;
