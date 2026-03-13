@@ -77,7 +77,8 @@ namespace MWEngine {
 	bool __thiscall CanUseNOS(uintptr_t ptr) {
 		IENGINE_FUNCTION_LOG("CanUseNOS");
 		auto pThis = GetEngineRacer(ptr);
-		return pThis->mNOSCapacity > 0.0;
+		//return pThis->mNOSCapacity > 0.0;
+		return true; // is this the delay for nos usage at the start of a race?
 	}
 	void __thiscall ChargeNOS(uintptr_t ptr, float charge) {
 		IENGINE_FUNCTION_LOG("ChargeNOS");

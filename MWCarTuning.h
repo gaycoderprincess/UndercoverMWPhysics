@@ -231,9 +231,6 @@ void GetLerpedCarTuning(MWCarTuning& tmp, const std::string& model, float brake,
 		//__debugbreak();
 	}
 
-	while (base->GEAR_RATIO[base->GEAR_RATIO.size()-1] <= 0.0) { base->GEAR_RATIO.pop_back(); }
-	while (top->GEAR_RATIO[top->GEAR_RATIO.size()-1] <= 0.0) { top->GEAR_RATIO.pop_back(); }
-
 	while (base->YAW_CONTROL.size() < top->YAW_CONTROL.size()) { base->YAW_CONTROL.push_back(0.0); }
 	while (base->GEAR_RATIO.size() < top->GEAR_RATIO.size()) { base->GEAR_RATIO.push_back(0.0); }
 	while (base->TORQUE.size() < top->TORQUE.size()) { base->TORQUE.push_back(0.0); }
@@ -364,6 +361,8 @@ void GetLerpedCarTuning(MWCarTuning& tmp, const std::string& model, float brake,
 	TUNED_VALUE(SPOOL_TIME_UP, induction);
 	TUNED_VALUE(PSI, induction);
 	TUNED_VALUE(HIGH_BOOST, induction);
+
+	while (tmp.GEAR_RATIO[tmp.GEAR_RATIO.size()-1] <= 0.0) { tmp.GEAR_RATIO.pop_back(); }
 }
 
 void GetLerpedCarTuning(MWCarTuning& out, const std::string& model, const VehicleCustomizations* cust) {
