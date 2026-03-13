@@ -11,9 +11,9 @@ public:
 	}
 
 	AverageBase(int size, int slots)
-			: //nSize(size),   //
-			  nSlots(slots), //
-			  nSamples(0),   //
+			: //nSize(size),
+			  nSlots(slots),
+			  nSamples(0),
 			  nCurrentSlot(0) {}
 
 	void *Allocate(unsigned int size, const char *name) {
@@ -36,15 +36,15 @@ protected:
 class Average : public AverageBase {
 public:
 	Average()
-			: AverageBase(4, 0), //
-			  fAverage(0.0f),    //
-			  pData(NULL),       //
+			: AverageBase(4, 0),
+			  fAverage(0.0f),
+			  pData(NULL),
 			  fTotal(0.0f) {}
 
 	Average(int slots)
-			: AverageBase(4, slots), //
-			  fAverage(0.0f),        //
-			  pData(NULL),           //
+			: AverageBase(4, slots),
+			  fAverage(0.0f),
+			  pData(NULL),
 			  fTotal(0.0f) {
 		Init(slots);
 	}
@@ -89,9 +89,9 @@ private:
 class AverageWindow : public Average {
 public:
 	AverageWindow(float f_timewindow, float f_frequency)
-			: Average(f_timewindow * f_frequency + 0.5f), //
-			  fTimeWindow(f_timewindow),                  //
-			  iOldestValue(0),                            //
+			: Average(f_timewindow * f_frequency + 0.5f),
+			  fTimeWindow(f_timewindow),
+			  iOldestValue(0),
 			  AllocSize(4 * nSlots) {
 		pTimeData = (float*)Allocate(AllocSize, "AverageWindow::TimeData");
 		memset(pTimeData, 0, AllocSize);
@@ -184,8 +184,8 @@ public:
 	}
 
 private:
-	bVector2 *Points; // offset 0x0, size 0x4
-	int NumPoints;    // offset 0x4, size 0x4
+	bVector2 *Points;
+	int NumPoints;
 };
 
 template <typename T> struct GraphEntry {
@@ -202,7 +202,6 @@ public:
 	void Blend(T *dest, T *a, T *b, const T blend_a);
 
 	// Credits: Brawltendo
-	// UNSOLVED
 	void GetValue(T *pValue, T x) {
 		if (NumEntries > 1) {
 			if (x <= GraphData[0].x) {
@@ -230,8 +229,8 @@ public:
 	}
 
 private:
-	GraphEntry<T> *GraphData; // offset 0x0, size 0x4
-	int NumEntries;           // offset 0x4, size 0x4
+	GraphEntry<T> *GraphData;
+	int NumEntries;
 };
 
 template <> void tGraph<float>::Blend(float *dest, float *a, float *b, const float blend_a) {
