@@ -419,6 +419,19 @@ class SuspensionRacerMW : public ChassisMW {
 	Steering mSteering;
 	Tire *mTires[4];
 
+	struct TempCollisionListener {
+		void* vtable;
+		void* vt_OnCollision = (void*)&TempCollisionListener::OnCollision;
+
+		SuspensionRacerMW* GetSuspensionRacer() {
+			auto ptr = (uintptr_t)this;
+			ptr -= offsetof(SuspensionRacerMW, tmpCollisionListener);
+			return (SuspensionRacerMW*)ptr;
+		}
+
+		void OnCollision(const Sim::Collision::Info *cinfo);
+	} tmpCollisionListener;
+
 	float GetDriftValue() { SUSPENSIONSIMPLE_FUNCTION_LOG("GetDriftValue"); return 0.0; }
 	void ApplyVehicleEntryForces(bool enteringVehicle, const UMath::Vector3 &pos, bool calledfromEvent) {}
 	float GetDynamicRideHeight(unsigned int idx, State*) { SUSPENSIONRACER_FUNCTION_LOG("GetDynamicRideHeight"); return GetRideHeight(idx); }

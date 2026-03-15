@@ -135,8 +135,7 @@ namespace UMath {
 		r.z = a.z - b.z;
 	}
 
-	//UMath::ScaleAdd((UMath::Vector3)state.matrix.y, counter_yaw - yaw, total_torque, total_torque);
-	//total_torque.x = (counter_yaw - yaw) * state.matrix.y.x + total_torque.x;
+	// NOTE this was wrong in the decomp!
 	inline void ScaleAdd(const Vector3 &a, const float s, const Vector3 &b, Vector3 &r) {
 		r.x = s * a.x + b.x;
 		r.y = s * a.y + b.y;
@@ -144,25 +143,6 @@ namespace UMath {
 	}
 
 	inline float Ramp(const float a, const float amin, const float amax) {
-		//auto v3 = amax - amin;
-		//if ( v3 <= 0.000001 )
-		//	return 0.0;
-		//auto v5 = (a - amin) / v3;
-		//if ( v5 >= 1.0 )
-		//	return 1.0;
-		//auto result = v5;
-		//if ( v5 < 0.0 )
-		//	return 0.0;
-		//return result;
-
-		//auto v2 = 1.0;
-		//if ( ((a - amin) / (amax - amin)) < 1.0 )
-		//	v2 = ((a - amin) / (amax - amin));
-		//auto v3 = v2;
-		//if ( v2 < 0.0 )
-		//	v3 = 0.0;
-		//return v3;
-
 		float arange = amax - amin;
 		return arange > FLOAT_EPSILON ? std::max(0.0f, std::min((a - amin) / arange, 1.0f)) : 0.0f;
 	}

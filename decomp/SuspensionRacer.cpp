@@ -36,7 +36,9 @@ void SuspensionRacerMW::Create(const BehaviorParams &bp) {
 	mBurnOut = Burnout();
 	mSteering = Steering();
 
-	//Sim::Collision::AddListener(this, GetOwner(), "SuspensionRacerMW"); // todo
+	tmpCollisionListener = TempCollisionListener();
+	tmpCollisionListener.vtable = &tmpCollisionListener.vt_OnCollision;
+	Sim::Collision::AddListener((Sim::Collision::IListener*)&tmpCollisionListener, GetOwner(), "SuspensionRacerMW");
 
 	for (int i = 0; i < 4; ++i) {
 		mTires[i] = NULL;
@@ -604,11 +606,12 @@ void SuspensionRacerMW::Reset() {
 }
 
 void SuspensionRacerMW::OnCollision(const Sim::Collision::Info &cinfo) {
-	return; // todo
-
-	/*if (cinfo.type - 1U < COLLISION_INFO::WORLD) {
+	auto a2 = (uintptr_t)&cinfo;
+	uint32_t cinfoType = (*(uint32_t*)(a2 + 0x1C) & 7);
+	int actualType = (Sim::Collision::Info::CollisionType)cinfoType;
+	if (actualType == Sim::Collision::Info::WORLD || actualType == Sim::Collision::Info::OBJECT) {
 		float impulse = !cinfo.objAImmobile ? cinfo.impulseA : 0.0f;
-		if (cinfo.objB == GetOwner()->GetInstanceHandle()) {
+		if (cinfo.objB == GetOwner()->GetOwnerHandle()) {
 			impulse = !cinfo.objBImmobile ? cinfo.impulseB : 0.0f;
 		}
 		if (impulse > 10.0f) {
@@ -616,19 +619,23 @@ void SuspensionRacerMW::OnCollision(const Sim::Collision::Info &cinfo) {
 			mSteering.CollisionTimer = UMath::Max(damper, mSteering.CollisionTimer);
 		}
 	}
-	if (cinfo.type == COLLISION_INFO::GROUND) {
+	if (actualType == Sim::Collision::Info::GROUND) {
 		mLastGroundCollision = Sim::GetTime();
 	}
-	if (cinfo.type == COLLISION_INFO::WORLD) {
-		if (UMath::Abs(cinfo.normal.y) < 0.1f && this->mCollisionBody && (UMath::LengthSquare(cinfo.closingVel) < Tweak_WallSteerClosingSpeed)) {
-			const UMath::Vector3 &vFoward = mCollisionBody->GetForwardVector();
-			const UMath::Vector3 &vRight = mCollisionBody->GetRightVector();
+	if (actualType == Sim::Collision::Info::WORLD) {
+		if (UMath::Abs(cinfo.normal.y) < 0.1f && mRBComplex && (UMath::LengthSquare(cinfo.closingVel) < Tweak_WallSteerClosingSpeed)) {
+			const UMath::Vector3 &vFoward = *mRB->GetForwardVector();
+			const UMath::Vector3 &vRight = *mRB->GetRightVector();
 			if ((mSteering.WallNoseTurn == 0.0f) && UMath::LengthSquare(cinfo.objAVel) < Tweak_WallSteerBodySpeed &&
 				UMath::Dot(cinfo.normal, vFoward) <= 0.0f) {
 				UMath::Vector3 rpos;
-				UMath::Sub(cinfo.position, mRB->GetPosition(), rpos);
+				UMath::Sub(cinfo.position, *mRB->GetPosition(), rpos);
+
+				UMath::Vector3 dim;
+				mRB->GetDimension(&dim);
+
 				float dirdot = UMath::Dot(rpos, vFoward);
-				if (dirdot > mRB->GetDimension().z * 0.75f) {
+				if (dirdot > dim.z * 0.75f) {
 					float dot = UMath::Dot(cinfo.normal, vRight);
 					mSteering.WallNoseTurn = (dot > 0.0f ? 1.0f : -1.0f) - dot;
 				}
@@ -636,15 +643,22 @@ void SuspensionRacerMW::OnCollision(const Sim::Collision::Info &cinfo) {
 			if (mSteering.WallSideTurn == 0.0f && GetVehicle()->GetSpeed() < 0.0f) {
 				float dirdot = UMath::Dot(cinfo.normal, vRight);
 				if (UMath::Abs(dirdot) > FLOAT_EPSILON) {
+					UMath::Vector3 dim;
+					mRB->GetDimension(&dim);
+
 					UMath::Vector3 rpos;
-					UMath::Sub(cinfo.position, mRB->GetPosition(), rpos);
-					if (UMath::Abs(UMath::Dot(rpos, vFoward)) > (mRB->GetDimension().z * 0.75f)) {
+					UMath::Sub(cinfo.position, *mRB->GetPosition(), rpos);
+					if (UMath::Abs(UMath::Dot(rpos, vFoward)) > (dim.z * 0.75f)) {
 						mSteering.WallSideTurn = dirdot;
 					}
 				}
 			}
 		}
-	}*/
+	}
+}
+
+void SuspensionRacerMW::TempCollisionListener::OnCollision(const Sim::Collision::Info *cinfo) {
+	return GetSuspensionRacer()->OnCollision(*cinfo);
 }
 
 // Credits: Brawltendo
