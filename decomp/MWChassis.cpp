@@ -522,7 +522,7 @@ namespace MWChassis {
 	}
 
 	void* NewVTable[] = {
-			(void*)0x7B8560, // generic interface dtor
+			(void*)0xDEADBEEF, // dtor
 			(void*)&GetChassisName,
 			(void*)&GetWheelTraction,
 			//(void*)&GetWheelDynamicSlipAngle,

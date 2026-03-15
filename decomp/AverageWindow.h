@@ -1,27 +1,9 @@
 class AverageBase {
 public:
-	void *operator new(std::size_t size) {
-		return gFastMem.Alloc(size, nullptr);
-	}
-
-	void operator delete(void *mem, std::size_t size) {
-		if (mem) {
-			gFastMem.Free(mem, size, nullptr);
-		}
-	}
-
 	AverageBase(int size, int slots)
-			: //nSize(size),
-			  nSlots(slots),
+			: nSlots(slots),
 			  nSamples(0),
 			  nCurrentSlot(0) {}
-
-	void *Allocate(unsigned int size, const char *name) {
-		return gFastMem.Alloc(size, name);
-	}
-	void DeAllocate(void *ptr, unsigned int size, const char *name) {
-		return gFastMem.Free(ptr, size, name);
-	}
 
 	unsigned char GetNumSamples() {
 		return nSamples;
@@ -93,12 +75,14 @@ public:
 			  fTimeWindow(f_timewindow),
 			  iOldestValue(0),
 			  AllocSize(4 * nSlots) {
-		pTimeData = (float*)Allocate(AllocSize, "AverageWindow::TimeData");
+		pTimeData = (float*)gFastMem.Alloc(AllocSize, "AverageWindow::TimeData");
 		memset(pTimeData, 0, AllocSize);
 	}
 
 	void DeInit() {
-		DeAllocate(pTimeData, AllocSize, "AverageWindow::TimeData");
+		if (pTimeData) {
+			gFastMem.Free(pTimeData, AllocSize, "AverageWindow::TimeData");
+		}
 		Average::DeInit();
 	}
 

@@ -132,7 +132,7 @@ namespace MWEngine {
 	}
 
 	void* NewVTable[] = {
-			(void*)0x7B8560, // generic interface dtor
+			(void*)0xDEADBEEF, // dtor
 			(void*)&GetRPM,
 			(void*)&GetEngineBogRPM,
 			(void*)&GetRedline,

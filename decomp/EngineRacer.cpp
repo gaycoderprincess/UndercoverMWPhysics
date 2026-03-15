@@ -133,9 +133,7 @@ void EngineRacer::dtor(char a2) {
 
 	delete mMWInfo;
 
-	//if (mCarInfo.mCollection) {
-	//	Attrib::Collection::Release(mCarInfo.mCollection, 0);
-	//}
+	mCarInfo.dtor();
 
 	dtor_simobject(this); // frees the interface list
 
