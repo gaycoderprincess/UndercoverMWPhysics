@@ -196,22 +196,24 @@ MWCarTuning* LoadCarTuningFromFile(std::string configCarName) {
 	return &aCarTunings[aCarTunings.size()-1];
 }
 
-MWCarTuning* GetCarTuning(const std::string& model) {
+int GetCarTuning(const std::string& model) {
 	for (auto& tuning : aCarTunings) {
-		if (tuning.carName == model) return &tuning;
+		if (tuning.carName == model) return &tuning - &aCarTunings[0];
 	}
 	if (auto tuning = LoadCarTuningFromFile(model)) {
-		return tuning;
+		return aCarTunings.size()-1;
 	}
 	WriteLog(std::format("Failed to find tunings for {}", model));
-	return nullptr;
+	return -1;
 }
 
 #define TUNED_VALUE(value, delta) tmp.value = std::lerp(base->value, top->value, delta);
 
 void GetLerpedCarTuning(MWCarTuning& tmp, const std::string& model, float brake, float drivetrain, float engine, float induction, float nitro, float suspension, float tire) {
-	auto base = GetCarTuning(model);
-	auto top = GetCarTuning(model + "_top");
+	auto baseId = GetCarTuning(model);
+	auto topId = GetCarTuning(model + "_top");
+	auto base = baseId >= 0 ? &aCarTunings[baseId] : nullptr;
+	auto top = topId >= 0 ? &aCarTunings[topId] : nullptr;
 	if (!top && !base) {
 		MessageBoxA(nullptr, std::format("Failed to find tunings for {}", model).c_str(), "nya?!~", MB_ICONERROR);
 		__debugbreak();
@@ -362,7 +364,7 @@ void GetLerpedCarTuning(MWCarTuning& tmp, const std::string& model, float brake,
 	TUNED_VALUE(PSI, induction);
 	TUNED_VALUE(HIGH_BOOST, induction);
 
-	while (tmp.GEAR_RATIO[tmp.GEAR_RATIO.size()-1] <= 0.0) { tmp.GEAR_RATIO.pop_back(); }
+	while (tmp.GEAR_RATIO[tmp.GEAR_RATIO.size()-1] <= 0.35) { tmp.GEAR_RATIO.pop_back(); }
 }
 
 void GetLerpedCarTuning(MWCarTuning& out, const std::string& model, const VehicleCustomizations* cust) {
@@ -379,4 +381,15 @@ void GetLerpedCarTuning(MWCarTuning& out, const std::string& model, const Vehicl
 	else {
 		return GetLerpedCarTuning(out, model, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
 	}
+}
+
+Physics::Tunings* GetVehicleMWTunings(IVehicle* veh) {
+	auto cust = veh->GetCustomizations();
+	if (!cust) return nullptr;
+
+	static Physics::Tunings tmp;
+	memset(&tmp, 0, sizeof(tmp));
+	tmp.Value[Physics::Tunings::NOS] = cust->PhysicsTuning[VehicleCustomizations::NITROUS];
+	tmp.Value[Physics::Tunings::HANDLING] = cust->PhysicsTuning[VehicleCustomizations::TIRES];
+	return &tmp;
 }

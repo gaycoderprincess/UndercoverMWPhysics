@@ -559,23 +559,7 @@ public:
 	SleepState DoSleep(const State &state);
 
 	Physics::Tunings* GetVehicleTunings() const {
-		if (auto veh = GetVehicle()->GetCustomizations()) {
-			static Physics::Tunings tmp;
-			memset(&tmp, 0, sizeof(tmp));
-
-			// engine -1.0 1.0 tune 2, -1 torque 1 horsepower
-			// suspension -1.0 1.0 tune 3, -1 soft 1 stiff
-			// drivetrain -1.0 1.0 tune 1, -1 accel 1 top speed
-			// tires -1.0 1.0 tune 4, -1 loose 1 grip
-			// nitrous -1.0 1.0 tune 0, -1 strength 1 duration
-
-			tmp.Value[Physics::Tunings::NOS] = veh->PhysicsTuning[0];
-			tmp.Value[Physics::Tunings::HANDLING] = veh->PhysicsTuning[4];
-			return &tmp;
-		}
-		else {
-			return nullptr;
-		}
+		return GetVehicleMWTunings(GetVehicle());
 	}
 
 	const UMath::Vector3 &GetWheelPos(unsigned int i) const {
