@@ -1,10 +1,14 @@
-float UNDERCOVER_BrakesAtValue = 0.0;
-float UNDERCOVER_StaticGripAtValue = 0.0;
-float UNDERCOVER_RollCenterAtValue = 0.0;
-float UNDERCOVER_AeroCGAtValue = 0.0;
-float UNDERCOVER_AeroCoeffAtValue = 0.0;
-float UNDERCOVER_SuspensionAtValue = 0.0;
-float UNDERCOVER_SteeringAtValue = 0.0;
+bool IsReformedTunings() {
+	return Attrib::FindCollection(Attrib::StringHash32("physics_tuning"), Attrib::StringHash32("steering_speed"));
+}
+
+enum eReformedTuning {
+	REFORMED_TURBO_BOOST_CONTROLLER = 0, // -1.0 low rpms 1.0 high rpms
+	REFORMED_GEAR_RATIO_FINAL = 1, // -1.0 higher 1.0 lower
+	REFORMED_STEERING_SPEED = 2, // -1.0 slower 1.0 faster
+	REFORMED_HANDBRAKE_PRESSURE = 3, // -1.0 low 1.0 high
+	REFORMED_SWAYBAR_STIFFNESS = 4, // -1.0 softer 1.0 stiffer
+};
 
 struct MWCarTuning {
 	std::string carName;
@@ -367,6 +371,10 @@ void GetLerpedCarTuning(MWCarTuning& tmp, const std::string& model, float brake,
 	while (tmp.GEAR_RATIO[tmp.GEAR_RATIO.size()-1] <= 0.35) { tmp.GEAR_RATIO.pop_back(); }
 }
 
+float GetPhysicsTuningValue(float in, float max) {
+	return (in * max) + 1.0;
+}
+
 void GetLerpedCarTuning(MWCarTuning& out, const std::string& model, const VehicleCustomizations* cust) {
 	if (cust) {
 		float brake = (cust->InstalledParts[CARSLOTID_BRAKE_PACKAGE].kit_num + 1) / 4.0;
@@ -376,7 +384,14 @@ void GetLerpedCarTuning(MWCarTuning& out, const std::string& model, const Vehicl
 		float nitro = cust->InstalledParts[CARSLOTID_NITROUS_PACKAGE].kit_num / 3.0;
 		float suspension = (cust->InstalledParts[CARSLOTID_SUSPENSION_PACKAGE].kit_num + 1) / 4.0;
 		float tire = (cust->InstalledParts[CARSLOTID_TIRE_PACKAGE].kit_num + 1) / 4.0;
-		return GetLerpedCarTuning(out, model, brake, drivetrain, engine, induction, nitro, suspension, tire);
+		GetLerpedCarTuning(out, model, brake, drivetrain, engine, induction, nitro, suspension, tire);
+
+		if (IsReformedTunings()) {
+			out.EBRAKE *= GetPhysicsTuningValue(cust->PhysicsTuning[REFORMED_HANDBRAKE_PRESSURE], 0.3);
+			out.FINAL_GEAR *= GetPhysicsTuningValue(cust->PhysicsTuning[REFORMED_GEAR_RATIO_FINAL], 0.1);
+			out.SWAYBAR_STIFFNESS.Front *= GetPhysicsTuningValue(cust->PhysicsTuning[REFORMED_SWAYBAR_STIFFNESS], -0.1);
+			out.SWAYBAR_STIFFNESS.Rear *= GetPhysicsTuningValue(cust->PhysicsTuning[REFORMED_SWAYBAR_STIFFNESS], -0.1);
+		}
 	}
 	else {
 		return GetLerpedCarTuning(out, model, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
@@ -389,7 +404,13 @@ Physics::Tunings* GetVehicleMWTunings(IVehicle* veh) {
 
 	static Physics::Tunings tmp;
 	memset(&tmp, 0, sizeof(tmp));
-	tmp.Value[Physics::Tunings::NOS] = cust->PhysicsTuning[VehicleCustomizations::NITROUS];
-	tmp.Value[Physics::Tunings::HANDLING] = cust->PhysicsTuning[VehicleCustomizations::TIRES];
+	if (IsReformedTunings()) {
+		//tmp.Value[Physics::Tunings::NOS] = cust->PhysicsTuning[REFORMED_TURBO_BOOST_CONTROLLER];
+		tmp.Value[Physics::Tunings::STEERING] = cust->PhysicsTuning[REFORMED_STEERING_SPEED];
+	}
+	else {
+		tmp.Value[Physics::Tunings::NOS] = cust->PhysicsTuning[VehicleCustomizations::NITROUS];
+		tmp.Value[Physics::Tunings::HANDLING] = cust->PhysicsTuning[VehicleCustomizations::TIRES];
+	}
 	return &tmp;
 }

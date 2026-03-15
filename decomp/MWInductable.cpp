@@ -12,9 +12,21 @@ namespace MWInductable {
 		INDUCTIONUC_TWINSCREW_BLOWER = 4,
 	};
 
+	int __thiscall GetInductionType(uintptr_t ptr);
+	float __thiscall GetSpool(uintptr_t ptr);
+	float __thiscall GetCurrentPSI(uintptr_t ptr);
+	float __thiscall GetMaxPSI(uintptr_t ptr);
+	bool __thiscall HasBlowoffValve(uintptr_t ptr);
+	bool __thiscall HasBypassValve(uintptr_t ptr);
+	float __thiscall GetRelativeTorqueGain(uintptr_t ptr);
+	float __thiscall GetBypassPosition(uintptr_t ptr);
+	bool __thiscall IsBlowoffOpened(uintptr_t ptr);
+	bool __thiscall IsWastegateOpened(uintptr_t ptr);
+
 	int __thiscall GetInductionType(uintptr_t ptr) {
 		IINDUCTABLE_FUNCTION_LOG("GetInductionType");
 		auto pThis = GetEngineRacer(ptr);
+		if (IsReformedTunings()) return INDUCTIONUC_NONE; // i think this is what crashes the game when you start driving in reformed?
 		return pThis->InductionType();
 	}
 

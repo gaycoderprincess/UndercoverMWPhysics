@@ -484,8 +484,8 @@ void SuspensionRacer::Create(const BehaviorParams& bp) {
 
 	auto tensor1 = mCarInfo.GetLayout()->TENSOR_SCALE;
 	auto tensor2 = *(UMath::Vector3*)&mMWInfo->TENSOR_SCALE;
-	if (tensor1.x != tensor2.x || tensor1.y != tensor2.y || tensor1.z != tensor2.z || tensor1.w != 0.0) {
-		MessageBoxA(nullptr, std::format("TENSOR_SCALE mismatch! MW {:.2f} {:.2f} {:.2f} 0.0 PS {:.2f} {:.2f} {:.2f} {:.2f}", tensor2.x, tensor2.y, tensor2.z, tensor1.x, tensor1.y, tensor1.z, tensor1.w).c_str(), "nya?!~", MB_ICONERROR);
+	if (std::abs(tensor1.x - tensor2.x) > 0.01 || std::abs(tensor1.y - tensor2.y) > 0.01 || std::abs(tensor1.z - tensor2.z) > 0.01 || std::abs(tensor1.w) > 0.01) {
+		MessageBoxA(nullptr, std::format("TENSOR_SCALE mismatch! MW {:.2f} {:.2f} {:.2f} 0.0 UC {:.2f} {:.2f} {:.2f} {:.2f}", tensor2.x, tensor2.y, tensor2.z, tensor1.x, tensor1.y, tensor1.z, tensor1.w).c_str(), "nya?!~", MB_ICONERROR);
 	}
 
 	mRB = nullptr;

@@ -130,6 +130,8 @@ cp orig_mw_full/rx7.conf maz_rx7_stk_95.conf
 cp orig_mw_full/rx7_top.conf maz_rx7_stk_95_top.conf
 cp orig_mw_full/rx7.conf maz_rx7_stk_95_m33.conf
 cp orig_mw_full/rx7_top.conf maz_rx7_stk_95_m33_top.conf
+cp orig_mw_full/rx7.conf maz_rx7_stk_95_m09.conf
+cp orig_mw_full/rx7_top.conf maz_rx7_stk_95_m09_top.conf
 cp orig_mw_full/rx8.conf maz_rx8_stk_06.conf
 cp orig_mw_full/rx8_top.conf maz_rx8_stk_06_top.conf
 cp orig_cb_full/mazdaspeed3.conf maz_sp3_stk_06.conf
