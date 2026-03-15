@@ -233,8 +233,6 @@ void GetLerpedCarTuning(MWCarTuning& tmp, const std::string& model, float brake,
 
 	if (base->YAW_CONTROL.size() != top->YAW_CONTROL.size() || base->GEAR_RATIO.size() != top->GEAR_RATIO.size() || base->TORQUE.size() != top->TORQUE.size() || base->ENGINE_BRAKING.size() != top->ENGINE_BRAKING.size()) {
 		WriteLog(std::format("Mismatched tunings for {}", model));
-		//MessageBoxA(nullptr, std::format("Mismatched tunings for {}", model).c_str(), "nya?!~", MB_ICONERROR);
-		//__debugbreak();
 	}
 
 	while (base->YAW_CONTROL.size() < top->YAW_CONTROL.size()) { base->YAW_CONTROL.push_back(0.0); }

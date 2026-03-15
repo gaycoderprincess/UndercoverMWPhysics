@@ -537,7 +537,7 @@ class EngineRacer : public VehicleBehavior {
 
 	ShiftStatus OnGearChange(GearID gear);
 	bool UseRevLimiter() const {
-		return true;
+		return bRevLimiter;
 	}
 	void DoECU();
 	float DoThrottle(float dT);

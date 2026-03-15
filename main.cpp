@@ -50,6 +50,10 @@ public:
 #define ITRANSMISSION_FUNCTION_LOG(name) {}
 #define IENGINE_FUNCTION_LOG(name) {}
 
+bool bAffectOpponents = false;
+bool bAffectCops = false;
+bool bRevLimiter = true;
+
 #include "decomp/ConversionUtil.hpp"
 
 auto cartuning_LookupKey = (uint32_t(__thiscall*)(Attrib::Gen::car_tuning*, const ISimable*, int))0x721E20;
@@ -539,7 +543,10 @@ std::vector<Attrib::Collection*> FindCollectionAndAllChildren(const char* classN
 }
 
 UCrc32* __thiscall LookupBehaviorSignatureHooked(PVehicle* pThis, UCrc32* result, const Attrib::StringKey* mechanic) {
-	if (pThis->mDriverClass == DRIVER_HUMAN) {
+	bool isCorrectDriverClass = pThis->mDriverClass == DRIVER_HUMAN;
+	if (bAffectOpponents && pThis->mDriverClass == DRIVER_RACER) isCorrectDriverClass = true;
+	if (bAffectCops && pThis->mDriverClass == DRIVER_COP) isCorrectDriverClass = true;
+	if (isCorrectDriverClass && pThis->mClass.mCRC != VehicleClass::CHOPPER.mCRC) {
 		if (mechanic == &BEHAVIOR_MECHANIC_ENGINE) {
 			*result = __EngineRacerMW.mSignature;
 			return result;
@@ -600,6 +607,13 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 			// AIVehicle::GetOverSteerCorrection, disable road surface getter during race cutscenes
 			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x40AAC8, 0x40AB89);
 			NyaHookLib::Patch<uint16_t>(0x40AAC2, 0xE8D9); // fld1
+
+			if (std::filesystem::exists("NFSUCMWPhysics_gcp.toml")) {
+				auto config = toml::parse_file("NFSUCMWPhysics_gcp.toml");
+				bAffectOpponents = config["mw_physics_opponents"].value_or(bAffectOpponents);
+				bAffectCops = config["mw_physics_cops"].value_or(bAffectCops);
+				bRevLimiter = config["rev_limiter"].value_or(bRevLimiter);
+			}
 
 			WriteLog("Mod initialized");
 		} break;

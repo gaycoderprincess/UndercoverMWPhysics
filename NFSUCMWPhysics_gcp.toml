@@ -1,0 +1,3 @@
+mw_physics_opponents = false		# set to true to have MW physics for opponents instead of just the player
+mw_physics_cops = false		    # set to true to have MW physics for cops instead of just the player
+rev_limiter = true			# enables the rev limiter, set to false to have higher RPMs
