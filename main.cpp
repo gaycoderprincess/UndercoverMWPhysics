@@ -33,6 +33,8 @@ public:
 };
 
 //#define FUNCTION_LOG(name) WriteLog(std::format("{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)));
+#define CHASSIS_FUNCTION_LOG(name) WriteLog(std::format("Chassis::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)));
+#define SUSPENSIONSIMPLE_FUNCTION_LOG(name) WriteLog(std::format("SuspensionSimple::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)));
 #define SUSPENSIONRACER_FUNCTION_LOG(name) WriteLog(std::format("SuspensionRacer::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)));
 #define ENGINERACER_FUNCTION_LOG(name) WriteLog(std::format("EngineRacer::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)));
 //#define ICHASSIS_FUNCTION_LOG(name) WriteLog(std::format("IChassis::{} called from {:X}", name, (uintptr_t)__builtin_return_address(0)))
@@ -273,15 +275,22 @@ auto dtor_simobject = (void(__thiscall*)(void*))0x7BC8A0;
 #include "MWCarTuning.h"
 #include "decomp/AverageWindow.h"
 #include "decomp/EngineRacer.h"
+#include "decomp/MWCheaterDummy.h"
+#include "decomp/MWWheel.h"
+#include "decomp/MWChassisBase.h"
+#include "decomp/SuspensionSimple.h"
 #include "decomp/SuspensionRacer.h"
-#include "decomp/MWChassis.cpp"
-#include "decomp/MWRaceEngine.cpp"
-#include "decomp/MWTiptronic.cpp"
-#include "decomp/MWEngineDamage.cpp"
-#include "decomp/MWInductable.cpp"
-#include "decomp/MWTransmission.cpp"
-#include "decomp/MWEngine.cpp"
+#include "decomp/interfaces/MWIChassis.cpp"
+#include "decomp/interfaces/MWIRaceEngine.cpp"
+#include "decomp/interfaces/MWITiptronic.cpp"
+#include "decomp/interfaces/MWIEngineDamage.cpp"
+#include "decomp/interfaces/MWIInductable.cpp"
+#include "decomp/interfaces/MWITransmission.cpp"
+#include "decomp/interfaces/MWIEngine.cpp"
+#include "decomp/MWWheel.cpp"
+#include "decomp/MWChassisBase.cpp"
 #include "decomp/SuspensionRacer.cpp"
+#include "decomp/SuspensionSimple.cpp"
 #include "decomp/EngineRacer.cpp"
 
 void ValueEditorMenu(float& value) {
@@ -367,7 +376,7 @@ void DebugMenu() {
 			DrawMenuOption(std::format("GetMaxSpeedometer {:.2f}", pEngine->GetMaxSpeedometer()));
 			DrawMenuOption(std::format("IsGearChanging {}", pEngine->IsGearChanging()));
 			DrawMenuOption(std::format("mEngineBraking {}", pEngine->mEngineBraking));
-			DrawMenuOption(std::format("IDLE {:.2f}", pEngine->mCarInfo.GetLayout()->IDLE));
+			DrawMenuOption(std::format("IDLE {:.2f}", pEngine->mMWInfo->IDLE));
 			DrawMenuOption(std::format("TORQUE.size() {}", pEngine->mMWInfo->TORQUE.size()));
 			DrawMenuOption(std::format("mSuspension {:X}", (uintptr_t)pEngine->mSuspension));
 			DrawMenuOption(std::format("mIInput {:X}", (uintptr_t)pEngine->mIInput));
@@ -470,21 +479,18 @@ void DebugMenu() {
 	ChloeMenuLib::EndMenu();
 }
 
-class FactoryEntry {
-public:
-	UCrc32 mSignature;
-	void* mConstructor;
-	FactoryEntry *mTail;
-
-	static inline auto& mHead = *(FactoryEntry**)0xDE7130;
-};
-FactoryEntry __EngineRacerMW;
-FactoryEntry __SuspensionRacerMW;
-
 auto oldctorbase = (void*(__thiscall*)(void*, BehaviorParams*, int))0x6DB670;
-SuspensionRacer* ChassisHumanConstruct(BehaviorParams* bp) {
-	auto data = pSuspension = (SuspensionRacer*)gFastMem.Alloc(sizeof(SuspensionRacer), nullptr);
-	memset(data,0,sizeof(SuspensionRacer));
+SuspensionSimpleMW* SuspensionSimpleConstruct(BehaviorParams* bp) {
+	auto data = (SuspensionSimpleMW*)gFastMem.Alloc(sizeof(SuspensionSimpleMW), nullptr);
+	memset(data,0,sizeof(SuspensionSimpleMW));
+	oldctorbase(data, bp, 0);
+	data->Create(*bp);
+	return data;
+}
+
+SuspensionRacerMW* SuspensionRacerConstruct(BehaviorParams* bp) {
+	auto data = pSuspension = (SuspensionRacerMW*)gFastMem.Alloc(sizeof(SuspensionRacerMW), nullptr);
+	memset(data,0,sizeof(SuspensionRacerMW));
 	oldctorbase(data, bp, 0);
 	data->Create(*bp);
 	return data;
@@ -498,17 +504,24 @@ EngineRacer* EngineRacerConstruct(BehaviorParams* bp) {
 	return data;
 }
 
-void RegisterNewBehaviors() {
-	__EngineRacerMW.mSignature.mCRC = Attrib::StringHash32("EngineRacerMW");
-	__EngineRacerMW.mConstructor = (void*)&EngineRacerConstruct;
-	__EngineRacerMW.mTail = FactoryEntry::mHead;
-	FactoryEntry::mHead = &__EngineRacerMW;
+class FactoryEntry {
+public:
+	UCrc32 mSignature;
+	void* mConstructor;
+	FactoryEntry *mTail;
 
-	__SuspensionRacerMW.mSignature.mCRC = Attrib::StringHash32("SuspensionRacerMW");
-	__SuspensionRacerMW.mConstructor = (void*)&ChassisHumanConstruct;
-	__SuspensionRacerMW.mTail = FactoryEntry::mHead;
-	FactoryEntry::mHead = &__SuspensionRacerMW;
-}
+	static inline auto& mHead = *(FactoryEntry**)0xDE7130;
+
+	FactoryEntry(const char* name, void* function) {
+		mSignature.mCRC = Attrib::StringHash32(name);
+		mConstructor = function;
+		mTail = FactoryEntry::mHead;
+		FactoryEntry::mHead = this;
+	}
+};
+FactoryEntry __EngineRacerMW("EngineRacerMW", (void*)&EngineRacerConstruct);
+FactoryEntry __SuspensionRacerMW("SuspensionRacerMW", (void*)&SuspensionRacerConstruct);
+FactoryEntry __SuspensionSimpleMW("SuspensionSimpleMW", (void*)&SuspensionSimpleConstruct);
 
 void AssistLoop() {
 	auto list = VEHICLE_LIST::GetList(VEHICLE_PLAYERS);
@@ -543,6 +556,7 @@ std::vector<Attrib::Collection*> FindCollectionAndAllChildren(const char* classN
 }
 
 UCrc32* __thiscall LookupBehaviorSignatureHooked(PVehicle* pThis, UCrc32* result, const Attrib::StringKey* mechanic) {
+	pThis->LookupBehaviorSignature(result, mechanic);
 	bool isCorrectDriverClass = pThis->mDriverClass == DRIVER_HUMAN;
 	if (bAffectOpponents && pThis->mDriverClass == DRIVER_RACER) isCorrectDriverClass = true;
 	if (bAffectCops && pThis->mDriverClass == DRIVER_COP) isCorrectDriverClass = true;
@@ -552,11 +566,12 @@ UCrc32* __thiscall LookupBehaviorSignatureHooked(PVehicle* pThis, UCrc32* result
 			return result;
 		}
 		if (mechanic == &BEHAVIOR_MECHANIC_SUSPENSION) {
-			*result = __SuspensionRacerMW.mSignature;
+			// only enable simple physics for the player, ai steering is broken
+			*result = (result->mCRC == Attrib::StringHash32("ChassisSimple") && pThis->mDriverClass == DRIVER_HUMAN) ? __SuspensionSimpleMW.mSignature : __SuspensionRacerMW.mSignature;
 			return result;
 		}
 	}
-	return pThis->LookupBehaviorSignature(result, mechanic);
+	return result;
 }
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
@@ -571,8 +586,6 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 
 			NyaHooks::LateInitHook::Init();
 			NyaHooks::LateInitHook::aFunctions.push_back([](){
-				RegisterNewBehaviors();
-
 				DLLDirSetter _setdir;
 
 				for (const auto& entry : std::filesystem::directory_iterator("CarDataDump")) {

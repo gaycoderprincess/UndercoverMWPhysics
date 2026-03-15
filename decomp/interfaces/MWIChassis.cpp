@@ -1,106 +1,33 @@
-namespace MWChassis {
-	SuspensionRacer* GetSuspensionRacer(uintptr_t ptr) {
-		ptr -= offsetof(SuspensionRacer, tmpChassis);
-		return (SuspensionRacer*)ptr;
+namespace MWIChassis {
+	// this is horrible but vtables don't work with the way i have this set up
+	ChassisMW* GetChassis(uintptr_t ptr) {
+		ptr -= offsetof(ChassisMW, tmpChassis);
+		return (ChassisMW*)ptr;
 	}
 
-	// calls in one frame:
-	// IChassis::GetCompression called from 619569
-	// IChassis::GetCompression called from 619578
-	// IChassis::GetCompression called from 619587
-	// IChassis::GetCompression called from 619599
-	// IChassis::GetNumWheels called from 700823
-	// IChassis::GetNumWheels called from 700902
-	// IChassis::GetNumWheels called from 70AADC
-	// IChassis::GetNumWheels called from 72D97A - don't run EngineRacer code if wheel count isn't 4
-	// IChassis::GetNumWheels called from 7BA907
-	// IChassis::GetNumWheels called from 7BAA0F
-	// IChassis::GetNumWheelsOnGround called from 6F0F0E
-	// IChassis::GetNumWheelsOnGround called from 7011CD
-	// IChassis::GetNumWheelsOnGround called from 7013AE
-	// IChassis::GetNumWheelsOnGround called from 70AAD1
-	// IChassis::GetNumWheelsOnGround called from 720AFF
-	// IChassis::GetNumWheelsOnGround called from 72D6CE
-	// IChassis::GetNumWheelsOnGround called from 72DA0C
-	// IChassis::GetSuspensionDigression called from 6195AE
-	// IChassis::GetSuspensionDigression called from 6195C3
-	// IChassis::GetSuspensionDigression called from 6195D8
-	// IChassis::GetSuspensionDigression called from 6195ED
-	// IChassis::GetWheelAngularVelocity called from 700270
-	// IChassis::GetWheelAngularVelocity called from 700283
-	// IChassis::GetWheelAngularVelocity called from 700316
-	// IChassis::GetWheelAngularVelocity called from 700329
-	// IChassis::GetWheelAngularVelocity called from 700555
-	// IChassis::GetWheelAngularVelocity called from 700568
-	// IChassis::GetWheelAngularVelocity called from 70065D
-	// IChassis::GetWheelAngularVelocity called from 700670
-	// IChassis::GetWheelAngularVelocity called from 730F61
-	// IChassis::GetWheelAngularVelocity called from 730F70
-	// IChassis::GetWheelAngularVelocity called from 730F83
-	// IChassis::GetWheelAngularVelocity called from 730F96
-	// IChassis::GetWheelBrakeTorque called from 7017A6
-	// IChassis::GetWheelBrakeTorque called from 7017C1
-	// IChassis::GetWheelBrakeTorque called from 70182B
-	// IChassis::GetWheelBrakeTorque called from 701846
-	// IChassis::GetWheelIdealTorque called from 70176F
-	// IChassis::GetWheelIdealTorque called from 701785
-	// IChassis::GetWheelIdealTorque called from 7017F6
-	// IChassis::GetWheelIdealTorque called from 70180C
-	// IChassis::GetWheelieAngle called from 61944A
-	// IChassis::GetWheelLoad called from 619469
-	// IChassis::GetWheelLoad called from 61947C
-	// IChassis::GetWheelLoad called from 61948F
-	// IChassis::GetWheelLoad called from 6194A2
-	// IChassis::GetWheelRoadSurface called from 428F45
-	// IChassis::GetWheelRoadSurface called from 428F66
-	// IChassis::GetWheelRoadSurface called from 428F84
-	// IChassis::GetWheelRoadSurface called from 428FA2
-	// IChassis::GetWheelRoadSurface called from 7BA977
-	// IChassis::GetWheelSkid called from 7BA9BB
-	// IChassis::GetWheelSlip called from 61952D
-	// IChassis::GetWheelSlip called from 61953C
-	// IChassis::GetWheelSlip called from 61954B
-	// IChassis::GetWheelSlip called from 61955A
-	// IChassis::GetWheelSlip called from 700425
-	// IChassis::GetWheelSlip called from 700438
-	// IChassis::GetWheelSlip called from 700471
-	// IChassis::GetWheelSlip called from 700484
-	// IChassis::GetWheelSlip called from 7BA9AF
-	// IChassis::GetWheelSlipAngle called from 6194F1
-	// IChassis::GetWheelSlipAngle called from 619500
-	// IChassis::GetWheelSlipAngle called from 61950F
-	// IChassis::GetWheelSlipAngle called from 61951E
-	// IChassis::GetWheelSlipRatio called from 6194B5
-	// IChassis::GetWheelSlipRatio called from 6194C4
-	// IChassis::GetWheelSlipRatio called from 6194D3
-	// IChassis::GetWheelSlipRatio called from 6194E2
-	// IChassis::GetWheelSlipRatio called from 730F13
-	// IChassis::GetWheelSlipRatio called from 730F22
-	// IChassis::GetWheelSlipRatio called from 730F35
-	// IChassis::GetWheelSlipRatio called from 730F48
-	// IChassis::GetWheelTraction called from 719550 - EngineRacer::DoThrottle
-	// IChassis::GetWheelTraction called from 719563 - EngineRacer::DoThrottle
-	// IChassis::GetWheelTraction called from 71957A - EngineRacer::DoThrottle
-	// IChassis::GetWheelTraction called from 719591 - EngineRacer::DoThrottle
-	// IChassis::IsCounterSteering called from 72DEC3
-	// IChassis::IsStaticResetCondition called from 43416C - AIVehicleHuman::OnTaskSimulate, resets the car if needed
-	// IChassis::IsWheelOnGround called from 428EF9
-	// IChassis::IsWheelOnGround called from 428F0C
-	// IChassis::IsWheelOnGround called from 428F1F
-	// IChassis::IsWheelOnGround called from 428F32
-	// IChassis::IsWheelOnGround called from 70052A
-	// IChassis::IsWheelOnGround called from 700632
-	// IChassis::IsWheelOnGround called from 70083E
-	// IChassis::IsWheelOnGround called from 7BA940
-	// IChassis::SetWheelAngularVelocity called from 7005C7
-	// IChassis::SetWheelAngularVelocity called from 7005F0
-	// IChassis::SetWheelAngularVelocity called from 7006CF
-	// IChassis::SetWheelAngularVelocity called from 7006F8
-	// IChassis::SetWheelMaxAngularVelocity called from 70093D
-	// IChassis::SetWheelMaximumTorqueRatio called from 72DD70
-	// IChassis::SetWheelMaximumTorqueRatio called from 72DD89
-	// IChassis::SetWheelMaximumTorqueRatio called from 72DDA3
-	// IChassis::SetWheelMaximumTorqueRatio called from 72DDBD
+	bool IsChassisSimple(uintptr_t ptr) {
+		return !strcmp(GetChassis(ptr)->mChassisType, "SuspensionSimple");
+	}
+
+	SuspensionSimpleMW* GetSuspensionSimple(uintptr_t ptr) {
+		if (strcmp(GetChassis(ptr)->mChassisType, "SuspensionSimple")) {
+			MessageBoxA(nullptr, std::format("GetSuspensionSimple() wrong type! Called from {:X}", (uintptr_t)__builtin_return_address(0)).c_str(), "nya?!~", MB_ICONERROR);
+			__debugbreak();
+		}
+		static_assert(offsetof(SuspensionSimpleMW, tmpChassis) == offsetof(ChassisMW, tmpChassis));
+		ptr -= offsetof(SuspensionSimpleMW, tmpChassis);
+		return (SuspensionSimpleMW*)ptr;
+	}
+
+	SuspensionRacerMW* GetSuspensionRacer(uintptr_t ptr) {
+		if (strcmp(GetChassis(ptr)->mChassisType, "SuspensionRacer")) {
+			MessageBoxA(nullptr, std::format("GetSuspensionRacer() wrong type! Called from {:X}", (uintptr_t)__builtin_return_address(0)).c_str(), "nya?!~", MB_ICONERROR);
+			__debugbreak();
+		}
+		static_assert(offsetof(SuspensionRacerMW, tmpChassis) == offsetof(ChassisMW, tmpChassis));
+		ptr -= offsetof(SuspensionRacerMW, tmpChassis);
+		return (SuspensionRacerMW*)ptr;
+	}
 
 	const char *__thiscall GetChassisName(uintptr_t ptr);
 	float __thiscall GetWheelTraction(uintptr_t ptr, unsigned int);
@@ -183,16 +110,24 @@ namespace MWChassis {
 	float __thiscall GetTimeFromLanding(uintptr_t ptr);
 	bool __thiscall IsCounterSteering(uintptr_t ptr);
 
-	const char* __thiscall GetChassisName(uintptr_t ptr) { return "ChassisHuman"; }
+	const char* __thiscall GetChassisName(uintptr_t ptr) { return IsChassisSimple(ptr) ? "ChassisSimple" : "ChassisHuman"; }
 	float __thiscall GetWheelTraction(uintptr_t ptr, unsigned int index) {
 		ICHASSIS_FUNCTION_LOG("GetWheelTraction");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[index]->GetTraction();
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[index]->mTraction;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelTraction(index);
+		}
 	}
 	float __thiscall GetWheelSlipRatio(uintptr_t ptr, unsigned int index) { // todo this is weird
 		ICHASSIS_FUNCTION_LOG("GetWheelSlipRatio");
-		auto pThis = GetSuspensionRacer(ptr);
-		return 1.0 - pThis->mTires[index]->GetTraction();
+		if (IsChassisSimple(ptr)) {
+			return std::max((1.0 - GetSuspensionSimple(ptr)->mTires[index]->mTraction) + 0.5, 1.0);
+		}
+		else {
+			return std::max((1.0 - GetSuspensionRacer(ptr)->GetWheelTraction(index)) + 0.5, 1.0);
+		}
 	}
 	float __thiscall GetDragBoost(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDragBoost");
@@ -204,67 +139,97 @@ namespace MWChassis {
 	}
 	const UMath::Vector3 *__thiscall GetWheelPos(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelPos");
-		auto pThis = GetSuspensionRacer(ptr);
-		return &pThis->GetWheelPos(i);
+		if (IsChassisSimple(ptr)) {
+			return &GetSuspensionSimple(ptr)->mTires[i]->GetPosition();
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelPos(i);
+		}
 	}
 	const UMath::Vector3 *__thiscall GetWheelLocalPos(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelLocalPos");
-		auto pThis = GetSuspensionRacer(ptr);
-		return &pThis->GetWheelLocalPos(i);
+		if (IsChassisSimple(ptr)) {
+			return &GetSuspensionSimple(ptr)->mTires[i]->GetLocalArm();
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelLocalPos(i);
+		}
 	}
 	UMath::Vector3 *__thiscall GetWheelCenterPos(uintptr_t ptr, UMath::Vector3 *result, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelCenterPos");
-		auto pThis = GetSuspensionRacer(ptr);
-		*result = pThis->mTires[i]->GetPosition();
-		if (!pThis->mRB) {
-			return result;
-		} else {
-			UMath::ScaleAdd(*pThis->mRB->GetUpVector(), pThis->mTires[i]->GetRadius(), *result, *result);
-			return result;
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->GetWheelCenterPos(result, i);
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelCenterPos(result, i);
 		}
 	}
 	float __thiscall GetWheelTorque(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelTorque");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[i]->GetTotalTorque();
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[i]->mAppliedTorque;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelTorque(i);
+		}
 	}
 	float __thiscall GetWheelBrakeTorque(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelBrakeTorque");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[i]->mBrakeTorque;
+		if (IsChassisSimple(ptr)) {
+			return 0.0; // todo
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelBrakeTorque(i);
+		}
 	}
 	float __thiscall GetWheelLoad(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelLoad");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[i]->GetLoad();
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[i]->mLoad;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelLoad(i);
+		}
 	}
 	float __thiscall GetWheelRoadHeight(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelRoadHeight");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->GetWheelRoadHeight(i);
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[i]->mNormal.w;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelRoadHeight(i);
+		}
 	}
 	bool __thiscall IsWheelOnGround(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("IsWheelOnGround");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->IsWheelOnGround(i);
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[i]->IsOnGround();
+		}
+		else {
+			return GetSuspensionRacer(ptr)->IsWheelOnGround(i);
+		}
 	}
 	float __thiscall GetSuspensionMaxTravel(uintptr_t ptr, unsigned int i) { // todo is this correct
 		ICHASSIS_FUNCTION_LOG("GetSuspensionMaxTravel");
-		auto pThis = GetSuspensionRacer(ptr);
-		return INCH2METERS(pThis->mMWInfo->TRAVEL.At(IsRear(i)));
+		auto pThis = GetChassis(ptr);
+		return INCH2METERS(pThis->mMWAttributes->TRAVEL.At(IsRear(i)));
 	}
 	float __thiscall GetCompression(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetCompression");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->GetCompression(i);
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[i]->GetCompression();
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetCompression(i);
+		}
 	}
 	float __thiscall GuessCompression(uintptr_t ptr, unsigned int id, float downforce) {
 		ICHASSIS_FUNCTION_LOG("GuessCompression");
-		auto pThis = GetSuspensionRacer(ptr);
+		auto pThis = GetChassis(ptr);
 		float compression = 0.0f;
 		if (downforce < 0.0f) {
 			unsigned int axle = id / 2;
-			float spring_weight = LBIN2NM(pThis->mMWInfo->SPRING_STIFFNESS.At(axle));
+			float spring_weight = LBIN2NM(pThis->mMWAttributes->SPRING_STIFFNESS.At(axle));
 			downforce *= 0.25f;
 			compression = -downforce / spring_weight;
 		}
@@ -272,105 +237,145 @@ namespace MWChassis {
 	}
 	void __thiscall ForceCompression(uintptr_t ptr, unsigned int id, float f) { // todo does this break stuff due to uc using it
 		ICHASSIS_FUNCTION_LOG("ForceCompression");
-		auto pThis = GetSuspensionRacer(ptr);
-		pThis->mTires[id]->SetCompression(f);
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[id]->SetCompression(f);
+		}
+		else {
+			return GetSuspensionRacer(ptr)->ForceCompression(id, f);
+		}
 	}
 	void __thiscall DecompressShocks(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("DecompressShocks");
-		auto pThis = GetSuspensionRacer(ptr);
 	}
 	float __thiscall GetWheelSlip(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetWheelSlip");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[id]->GetCurrentSlip();
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[id]->mSlip;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelSlip(id);
+		}
 	}
 	float __thiscall GetToleratedSlip(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetToleratedSlip");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[id]->GetToleratedSlip();
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[id]->mMaxSlip;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetToleratedSlip(id);
+		}
 	}
 	float __thiscall GetWheelSkid(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetWheelSkid");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[id]->GetLateralSpeed();
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[id]->mLateralSpeed;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelSkid(id);
+		}
 	}
 	float __thiscall GetWheelSlipAngle(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetWheelSlipAngle");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->GetWheelSlipAngle(id);
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[id]->mSlipAngle;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelSlipAngle(id);
+		}
 	}
 	const UMath::Vector3* __thiscall GetWheelRoadNormal(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetWheelRoadNormal");
-		auto pThis = GetSuspensionRacer(ptr);
-		return (UMath::Vector3*)&pThis->GetWheelRoadNormal(id);
+		if (IsChassisSimple(ptr)) {
+			return (UMath::Vector3*)&GetSuspensionSimple(ptr)->mTires[id]->mNormal;
+		}
+		else {
+			return (UMath::Vector3*)GetSuspensionRacer(ptr)->GetWheelRoadNormal(id);
+		}
 	}
 	const SimSurface* __thiscall GetWheelRoadSurface(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetWheelRoadSurface");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->GetWheelRoadSurface(id);
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[id]->GetSurface();
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelRoadSurface(id);
+		}
 	}
 	const UMath::Vector3* __thiscall GetWheelVelocity(uintptr_t ptr, unsigned int id) {
 		ICHASSIS_FUNCTION_LOG("GetWheelVelocity");
-		auto pThis = GetSuspensionRacer(ptr);
-		return &pThis->GetWheelVelocity(id);
+		if (IsChassisSimple(ptr)) {
+			return &GetSuspensionSimple(ptr)->mTires[id]->GetVelocity();
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelVelocity(id);
+		}
 	}
 	int __thiscall GetNumWheelsOnGround(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetNumWheelsOnGround");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->GetNumWheelsOnGround();
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mNumWheelsOnGround;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetNumWheelsOnGround();
+		}
 	}
 	unsigned int __thiscall GetNumWheelsOnBand(uintptr_t ptr) { // todo what is this?
 		ICHASSIS_FUNCTION_LOG("GetNumWheelsOnBand");
-		auto pThis = GetSuspensionRacer(ptr);
-		//return pThis->mNumWheelsOnGround;
 		return 0;
 	}
 	float __thiscall GetWheelAngularVelocity(uintptr_t ptr, int index) {
 		ICHASSIS_FUNCTION_LOG("GetWheelAngularVelocity");
-		auto pThis = GetSuspensionRacer(ptr);
-		SuspensionRacer::Tire *tire = pThis->mTires[index];
-		if (tire->IsBrakeLocked()) {
-			return 0.0f;
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[index]->mAV; // todo
 		}
-		if (!tire->IsOnGround() || !tire->IsSlipping()) {
-			return tire->GetAngularVelocity();
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelAngularVelocity(index);
 		}
-		return tire->GetRoadSpeed() / tire->GetRadius();
 	}
 	void __thiscall SetWheelAngularVelocity(uintptr_t ptr, int i, float f) {
 		ICHASSIS_FUNCTION_LOG("SetWheelAngularVelocity");
-		auto pThis = GetSuspensionRacer(ptr);
-		pThis->mTires[i]->SetAngularVelocity(f);
+		if (IsChassisSimple(ptr)) {
+			GetSuspensionSimple(ptr)->mTires[i]->mAV = f;
+		}
+		else {
+			GetSuspensionRacer(ptr)->SetWheelAngularVelocity(i, f);
+		}
 	}
 	void __thiscall SetWheelMaxAngularVelocity(uintptr_t ptr, int i, float f) { // todo this doesn't exist
 		ICHASSIS_FUNCTION_LOG("SetWheelMaxAngularVelocity");
-		auto pThis = GetSuspensionRacer(ptr);
 	}
 	float __thiscall GetWheelSteer(uintptr_t ptr, unsigned int wheel) {
 		ICHASSIS_FUNCTION_LOG("GetWheelSteer");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->GetWheelSteer(wheel);
+		if (IsChassisSimple(ptr)) {
+			return wheel < 2 ? RAD2ANGLE(GetSuspensionSimple(ptr)->mWheelSteer[wheel]) : 0.0f;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelSteer(wheel);
+		}
 	}
 	bool __thiscall CalculateFFBSteeringState(uintptr_t ptr, FFBSteeringState*) {
 		ICHASSIS_FUNCTION_LOG("CalculateFFBSteeringState");
-		auto pThis = GetSuspensionRacer(ptr);
 		return false;
 	}
 	float __thiscall GetSuspensionDigression(uintptr_t ptr, unsigned int i) { // todo is this correct
 		ICHASSIS_FUNCTION_LOG("GetSuspensionDigression");
-		auto pThis = GetSuspensionRacer(ptr);
-		return 1.0f - pThis->mMWInfo->SHOCK_DIGRESSION.At(IsRear(i));
+		auto pThis = GetChassis(ptr);
+		return 1.0f - pThis->mMWAttributes->SHOCK_DIGRESSION.At(IsRear(i));
 	}
 	float __thiscall GetWheelLateralForce(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelLateralForce");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[i]->mLateralForce;
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[i]->mLateralForce;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelLateralForce(i);
+		}
 	}
 	float __thiscall GetRideHeight(uintptr_t ptr, unsigned int idx) {
 		ICHASSIS_FUNCTION_LOG("GetRideHeight");
-		auto pThis = GetSuspensionRacer(ptr);
+		auto pThis = GetChassis(ptr);
 		float ride = pThis->GetRideHeight(idx);
-		const Physics::Tunings *tunings = pThis->GetVehicleTunings();
+		const Physics::Tunings *tunings = GetVehicleMWTunings(pThis->GetVehicle());
 		if (tunings) {
 			ride += INCH2METERS(tunings->Value[Physics::Tunings::RIDEHEIGHT]);
 		}
@@ -378,32 +383,43 @@ namespace MWChassis {
 	}
 	float __thiscall GetWheelRadius(uintptr_t ptr, unsigned int idx) {
 		ICHASSIS_FUNCTION_LOG("GetWheelRadius");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mTires[idx]->GetRadius();
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->mTires[idx]->mRadius;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelRadius(idx);
+		}
 	}
 	float __thiscall GetMaxSteering(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetMaxSteering");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->GetMaxSteering();
+		if (IsChassisSimple(ptr)) {
+			return 45.0;
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetMaxSteering();
+		}
 	}
 	void __thiscall MatchSpeed(uintptr_t ptr, float speed, bool for_nis) {
 		ICHASSIS_FUNCTION_LOG("MatchSpeed");
-		auto pThis = GetSuspensionRacer(ptr);
-		pThis->MatchSpeed(speed);
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->MatchSpeed(speed);
+		}
+		else {
+			return GetSuspensionRacer(ptr)->MatchSpeed(speed);
+		}
 	}
 	float __thiscall GetDriveshaftTorqueEffect(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDriveshaftTorqueEffect");
-		auto pThis = GetSuspensionRacer(ptr);
 		return 0.0;
 	}
 	float __thiscall GetRenderMotion(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetRenderMotion");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mMWInfo->RENDER_MOTION;
+		auto pThis = GetChassis(ptr);
+		return pThis->mMWAttributes->RENDER_MOTION;
 	}
 	ISteeringWheel::SteeringType __thiscall GetSteeringType(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetSteeringType");
-		auto pThis = GetSuspensionRacer(ptr);
+		auto pThis = GetChassis(ptr);
 
 		ISteeringWheel::SteeringType steer_type = ISteeringWheel::kGamePad;
 
@@ -420,28 +436,29 @@ namespace MWChassis {
 	}
 	float __thiscall GetWheelTorqueRatio(uintptr_t ptr, unsigned int i) { // todo what is this
 		ICHASSIS_FUNCTION_LOG("GetWheelTorqueRatio");
-		auto pThis = GetSuspensionRacer(ptr);
-		auto tire = pThis->mTires[i];
-		auto v70 = tire->mGripBoost;
-		if (v70 <= 1.0) v70 = 1.0;
-		float v63 = 1.0; // todo Curve::GetValueLinear((v19->mVehicleInfo->mLayoutPtr + 48 * v19->mAxleIndex + 0x1F0), (v21 * 2.23699)) Mu0[AxleIndex]
-		auto v69 = std::sqrt(((tire->mLongitudeForce * tire->mLongitudeForce) + (tire->mLateralForce * tire->mLateralForce)));
-		auto v72 = (v69 / (((((tire->mBrake + 1.0) * tire->mTractionBoost) * tire->mLoad) * v70) * v63));
-		return UMath::Clamp(v72, -3.0f, 3.0f);
+		if (IsChassisSimple(ptr)) {
+			return GetSuspensionSimple(ptr)->GetWheelTorqueRatio(i);
+		}
+		else {
+			return GetSuspensionRacer(ptr)->GetWheelTorqueRatio(i);
+		}
 	}
 	float __thiscall GetWheelIdealTorque(uintptr_t ptr, unsigned int i) { // todo what is this
 		ICHASSIS_FUNCTION_LOG("GetWheelIdealTorque");
-		auto pThis = GetSuspensionRacer(ptr);
-		auto tire = pThis->mTires[i];
-		return std::min(tire->GetTotalTorque() / tire->mRadius, 0.0f);
+		if (IsChassisSimple(ptr)) {
+			auto pThis = GetSuspensionSimple(ptr);
+			return std::min(pThis->mTires[i]->mAppliedTorque / pThis->mTires[i]->mRadius, 0.0f);
+		}
+		else {
+			auto pThis = GetSuspensionRacer(ptr);
+			return std::min(pThis->GetWheelTorque(i) / pThis->GetWheelRadius(i), 0.0f);
+		}
 	}
 	void __thiscall SetWheelRemoved(uintptr_t ptr, unsigned int i, bool b) { // todo
 		ICHASSIS_FUNCTION_LOG("SetWheelRemoved");
-		auto pThis = GetSuspensionRacer(ptr);
 	}
 	void __thiscall SetWheelMaximumTorqueRatio(uintptr_t ptr, unsigned int i, float f) { // todo
 		ICHASSIS_FUNCTION_LOG("SetWheelMaximumTorqueRatio");
-		auto pThis = GetSuspensionRacer(ptr);
 	}
 	bool __thiscall IsAntiBrakeLockOn(uintptr_t ptr) { ICHASSIS_FUNCTION_LOG("1"); return false; }
 	int __thiscall GetAntiBrakeLockLevel(uintptr_t ptr) { ICHASSIS_FUNCTION_LOG("2"); return 0; }
@@ -469,55 +486,47 @@ namespace MWChassis {
 	void __thiscall SetBrakingAssistLevel(uintptr_t ptr, int i) { ICHASSIS_FUNCTION_LOG("24"); return; }
 	float __thiscall GetDragCoefficient(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDragCoefficient");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mMWInfo->DRAG_COEFFICIENT;
+		auto pThis = GetChassis(ptr);
+		return pThis->mMWAttributes->DRAG_COEFFICIENT;
 	}
 	float __thiscall GetDownCoefficient(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDownCoefficient");
-		auto pThis = GetSuspensionRacer(ptr);
-		return pThis->mMWInfo->AERO_COEFFICIENT;
+		auto pThis = GetChassis(ptr);
+		return pThis->mMWAttributes->AERO_COEFFICIENT;
 	}
 	float __thiscall GetStaticGripForSpeed(uintptr_t ptr, float f) { // todo
 		ICHASSIS_FUNCTION_LOG("GetStaticGripForSpeed");
-		auto pThis = GetSuspensionRacer(ptr);
 		return 0.8;
 	}
 	void __thiscall SetClutchKickExtraTireSpin(uintptr_t ptr, float f) { // todo
 		ICHASSIS_FUNCTION_LOG("SetClutchKickExtraTireSpin");
-		auto pThis = GetSuspensionRacer(ptr);
 	}
 	float __thiscall GetWheelieAngle(uintptr_t ptr) { // todo
 		ICHASSIS_FUNCTION_LOG("GetWheelieAngle");
-		auto pThis = GetSuspensionRacer(ptr);
 		return 0.0;
 	}
 	bool __thiscall IsStaticResetCondition(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("IsStaticResetCondition");
-		auto pThis = GetSuspensionRacer(ptr);
 		return false;
 	}
 	void __thiscall SetAICatchOverride(uintptr_t ptr, bool) {
 		ICHASSIS_FUNCTION_LOG("SetAICatchOverride");
-		auto pThis = GetSuspensionRacer(ptr);
 	}
 	float __thiscall GetSlipToGripImpactTime(uintptr_t ptr) { // todo
 		ICHASSIS_FUNCTION_LOG("GetSlipToGripImpactTime");
-		auto pThis = GetSuspensionRacer(ptr);
 		return 0.0;
 	}
 	float __thiscall GetJumpTime(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetJumpTime");
-		auto pThis = GetSuspensionRacer(ptr);
+		auto pThis = GetChassis(ptr);
 		return pThis->mJumpTime;
 	}
 	float __thiscall GetTimeFromLanding(uintptr_t ptr) { // todo
 		ICHASSIS_FUNCTION_LOG("GetTimeFromLanding");
-		auto pThis = GetSuspensionRacer(ptr);
 		return 0.0;
 	}
 	bool __thiscall IsCounterSteering(uintptr_t ptr) { // todo
 		ICHASSIS_FUNCTION_LOG("IsCounterSteering");
-		auto pThis = GetSuspensionRacer(ptr);
 		return false;
 	}
 

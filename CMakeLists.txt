@@ -12,8 +12,7 @@ SET(CMAKE_CXX_STANDARD 20)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -masm=intel -s -static")
 
-add_compile_definitions(NYA_COMMON_NO_D3D SUSPENSIONRACER_ELISE_TEST)
-#add_compile_definitions(NYA_COMMON_NO_D3D)
+add_compile_definitions(NYA_COMMON_NO_D3D)
 add_library(NFSUCMWPhysics SHARED main.cpp)
 target_include_directories(NFSUCMWPhysics PUBLIC ../nya-common)
 target_include_directories(NFSUCMWPhysics PUBLIC ../nya-common/3rdparty)
