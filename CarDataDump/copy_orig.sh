@@ -52,8 +52,8 @@ cp orig_mw_full/punto.conf civichb.conf
 cp orig_mw_full/punto_top.conf civichb_top.conf
 cp orig_mw_full/copsport.conf cop_car_911_tur_06.conf
 cp orig_mw_full/copsport.conf cop_car_911_tur_06_top.conf
-cp orig_mw_full/copgto.conf cop_car_gtr_08.conf
-cp orig_mw_full/copgto.conf cop_car_gtr_08_top.conf
+cp orig_mw_full/copsport.conf cop_car_gtr_08.conf
+cp orig_mw_full/copsport.conf cop_car_gtr_08_top.conf
 cp orig_mw_full/copmidsize.conf cop_car_mid_05.conf
 cp orig_mw_full/copmidsize.conf cop_car_mid_05_top.conf
 cp orig_mw_full/copgto.conf cop_car_mus_08.conf
@@ -266,3 +266,11 @@ cp orig_mw_full/cobaltss.conf vol_sci_stk_08_boss.conf
 cp orig_mw_full/cobaltss_top.conf vol_sci_stk_08_boss_top.conf
 cp orig_mw_full/imprezawrx.conf wrxsti.conf
 cp orig_mw_full/imprezawrx_top.conf wrxsti_top.conf
+
+cp orig_mw_full/copsport.conf nis_gtr_r35_08_cop_superstate.conf
+cp orig_mw_full/copmidsize.conf maz_rx8_stk_06_cop_civic.conf
+cp orig_mw_full/copgto.conf for_mus_gt_06_cop_state.conf
+cp orig_mw_full/mustanggt.conf cop_car_mus_08_m22.conf
+cp orig_mw_full/mustanggt_top.conf cop_car_mus_08_m22_top.conf
+cp orig_mw_full/copsport.conf por_911_tur_06_cop_federal.conf
+cp orig_mw_full/copsuv.conf bug_vey_164_08_cop_suv.conf
