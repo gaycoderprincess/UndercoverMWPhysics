@@ -10,6 +10,10 @@ Massive thanks to everyone involved with [dbalatoni13's MW reverse engineering p
 - Plop the files into your game folder.
 - Enjoy, nya~ :3
 
+## Useful info
+
+- FOR DEVELOPERS: Almost all VLT values have been replaced! For editing car handling, edit the files in `CarDataDump` instead, except for these values: `ASPECT_RATIO`, `FRONT_AXLE`, `RIM_SIZE`, `SECTION_WIDTH`, `TRACK_WIDTH`, `WHEEL_BASE`
+
 ## Known issues
 
 - Skidmarks and tire smoke aren't 100% accurate
