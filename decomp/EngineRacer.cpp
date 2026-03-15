@@ -53,12 +53,12 @@ void EngineRacer::Create(const BehaviorParams &bp) {
 	ENGINERACER_FUNCTION_LOG("Create");
 
 	*(uintptr_t*)this = (uintptr_t)&NewEngineRacerVTable;
-	*(uintptr_t*)&tmpEngine = (uintptr_t)&MWEngine::NewVTable;
-	*(uintptr_t*)&tmpTransmission = (uintptr_t)&MWTransmission::NewVTable;
-	*(uintptr_t*)&tmpInductable = (uintptr_t)&MWInductable::NewVTable;
-	*(uintptr_t*)&tmpTiptronic = (uintptr_t)&MWTiptronic::NewVTable;
-	*(uintptr_t*)&tmpRaceEngine = (uintptr_t)&MWRaceEngine::NewVTable;
-	*(uintptr_t*)&tmpEngineDamage = (uintptr_t)&MWEngineDamage::NewVTable;
+	*(uintptr_t*)&tmpEngine = (uintptr_t)&MWIEngine::NewVTable;
+	*(uintptr_t*)&tmpTransmission = (uintptr_t)&MWITransmission::NewVTable;
+	*(uintptr_t*)&tmpInductable = (uintptr_t)&MWIInductable::NewVTable;
+	*(uintptr_t*)&tmpTiptronic = (uintptr_t)&MWITiptronic::NewVTable;
+	*(uintptr_t*)&tmpRaceEngine = (uintptr_t)&MWIRaceEngine::NewVTable;
+	*(uintptr_t*)&tmpEngineDamage = (uintptr_t)&MWIEngineDamage::NewVTable;
 
 	tmpEngine.mCOMObject = &bp.fowner->Object;
 	tmpTransmission.mCOMObject = &bp.fowner->Object;

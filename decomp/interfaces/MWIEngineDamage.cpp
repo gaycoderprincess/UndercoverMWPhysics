@@ -1,4 +1,4 @@
-namespace MWEngineDamage {
+namespace MWIEngineDamage {
 	EngineRacer* GetEngineRacer(uintptr_t ptr) {
 		ptr -= offsetof(EngineRacer, tmpEngineDamage);
 		return (EngineRacer*)ptr;

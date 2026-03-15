@@ -220,3 +220,22 @@ private:
 template <> void tGraph<float>::Blend(float *dest, float *a, float *b, const float blend_a) {
 	*dest = *a * blend_a + *b * (1.0f - blend_a);
 }
+
+// Credits: Brawltendo
+float Table::GetValue(float input) {
+	const int entries = NumEntries;
+	const float normarg = IndexMultiplier * (input - MinArg);
+	const int index = (int)normarg;
+
+	if (index < 0 || normarg < 0.0f)
+		return pTable[0];
+	if (index >= (entries - 1))
+		return pTable[entries - 1];
+
+	float ind = index;
+	if (ind > normarg)
+		ind -= 1.0f;
+
+	float delta = normarg - ind;
+	return (1.0f - delta) * pTable[index] + delta * pTable[index + 1];
+}

@@ -1,4 +1,4 @@
-namespace MWInductable {
+namespace MWIInductable {
 	EngineRacer* GetEngineRacer(uintptr_t ptr) {
 		ptr -= offsetof(EngineRacer, tmpInductable);
 		return (EngineRacer*)ptr;

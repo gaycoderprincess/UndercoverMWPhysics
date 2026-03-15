@@ -1,4 +1,4 @@
-namespace MWTiptronic {
+namespace MWITiptronic {
 	EngineRacer* GetEngineRacer(uintptr_t ptr) {
 		ptr -= offsetof(EngineRacer, tmpTiptronic);
 		return (EngineRacer*)ptr;

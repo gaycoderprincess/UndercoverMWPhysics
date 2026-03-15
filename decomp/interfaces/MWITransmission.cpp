@@ -1,4 +1,4 @@
-namespace MWTransmission {
+namespace MWITransmission {
 	EngineRacer* GetEngineRacer(uintptr_t ptr) {
 		ptr -= offsetof(EngineRacer, tmpTransmission);
 		return (EngineRacer*)ptr;

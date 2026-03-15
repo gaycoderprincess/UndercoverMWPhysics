@@ -100,6 +100,8 @@ class SuspensionSimpleMW : public ChassisMW {
 	void DoDriveForces(State &state);
 	void DoWheelForces(ChassisMW::State &state);
 	void OnTaskSimulate(float dT);
+	float CalculateUndersteerFactor() { return 0.0; }
+	float CalculateOversteerFactor() { return 0.0; }
 
 	// ISuspension
 	void MatchSpeed(float speed);
