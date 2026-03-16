@@ -1,5 +1,7 @@
 void WheelMW::UpdateSurface(const Attrib::Collection* surface) {
-
+	mSurface.dtor();
+	memset(&mSurface,0,sizeof(mSurface));
+	mSurface = Attrib::Instance(surface, 0);
 }
 
 bool WheelMW::InitPosition(ICollisionBody* cb, IRigidBody *rb, double maxcompression) {

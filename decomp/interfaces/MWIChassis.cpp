@@ -123,10 +123,10 @@ namespace MWIChassis {
 	float __thiscall GetWheelSlipRatio(uintptr_t ptr, unsigned int index) { // todo this is weird
 		ICHASSIS_FUNCTION_LOG("GetWheelSlipRatio");
 		if (IsChassisSimple(ptr)) {
-			return std::max((1.0 - GetSuspensionSimple(ptr)->mTires[index]->mTraction) + 0.5, 1.0);
+			return 1.0 - GetSuspensionSimple(ptr)->mTires[index]->mTraction;
 		}
 		else {
-			return std::max((1.0 - GetSuspensionRacer(ptr)->GetWheelTraction(index)) + 0.5, 1.0);
+			return 1.0 - GetSuspensionRacer(ptr)->GetWheelTraction(index);
 		}
 	}
 	float __thiscall GetDragBoost(uintptr_t ptr) {

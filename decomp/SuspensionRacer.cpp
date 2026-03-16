@@ -51,7 +51,7 @@ void SuspensionRacerMW::Create(const BehaviorParams &bp) {
 void SuspensionRacerMW::Destroy(char a2) {
 	SUSPENSIONRACER_FUNCTION_LOG("Destroy");
 
-	//Sim::Collision::RemoveListener(this); // todo
+	Sim::Collision::RemoveListener((Sim::Collision::IListener*)&tmpCollisionListener);
 
 	for (int i = 0; i < 4; ++i) {
 		WriteLog("delete mTires[i]");

@@ -12,6 +12,7 @@ public:
 	int pad;
 	UMath::Vector3 mVelocity;
 	int pad2;
+	Attrib::Instance mSurface;
 	float mSurfaceStick;
 	UMath::Vector4 mIntegral;
 
@@ -19,6 +20,10 @@ public:
 		CHASSIS_FUNCTION_LOG("Wheel::Wheel");
 		memset(this,0,sizeof(*this));
 		mFlags = flags;
+		Reset();
+	}
+
+	~WheelMW() {
 		Reset();
 	}
 
@@ -42,6 +47,8 @@ public:
 		mForce.y = 0.0;
 		mForce.z = 0.0;
 		mWorldPos = WWorldPos();
+		mSurface.dtor();
+		memset(&mSurface,0,sizeof(mSurface));
 	}
 
 	void UpdateSurface(const Attrib::Collection* surface);
@@ -107,9 +114,7 @@ public:
 	}
 
 	const SimSurface *GetSurface() const {
-		static SimSurface tmp = {};
-		memset(&tmp,0,sizeof(tmp));
-		return &tmp;
+		return (SimSurface*)&mSurface;
 	}
 
 	const UMath::Vector3 &GetVelocity() const {
