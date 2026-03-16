@@ -167,13 +167,13 @@ void EngineRacer::Sabotage(float time) {
 }
 
 bool EngineRacer::Blow() {
-	// todo
-	/*if (!mBlown) {
+	if (!mBlown) {
 		mBlown = true;
 		mSabotage = 0.0f;
-		new EEngineBlown(GetOwner()->GetInstanceHandle());
+		// todo
+		//new EEngineBlown(GetOwner()->GetInstanceHandle());
 		return true;
-	}*/
+	}
 	return false;
 }
 
