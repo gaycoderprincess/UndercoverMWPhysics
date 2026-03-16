@@ -17,30 +17,7 @@ void* NewSuspensionSimpleMWVTable[] = {
 		(void*)&SuspensionSimpleMW::ApplyVehicleEntryForces,
 };
 
-void SuspensionSimpleMW::Create(const BehaviorParams &bp) {
-	SUSPENSIONSIMPLE_FUNCTION_LOG("Create");
-
-	ChassisMW::Create(bp);
-
-	mChassisType = "SuspensionSimple";
-
-	*(uintptr_t*)this = (uintptr_t)&NewSuspensionSimpleMWVTable;
-
-	GetOwner()->QueryInterface(&mInput);
-	//GetOwner()->QueryInterface(&mCheater);
-	mFrictionBoost = 0.0f;
-	mDraft = 0.0f;
-	mPowerSliding = false;
-	mWheelSteer[0] = 0.0f;
-	mWheelSteer[1] = 0.0f;
-	mYawControlMultiplier = 0.0f;
-	mNumWheelsOnGround = 0;
-	mAgainstWall = 0.0f;
-	mMaxSteering = 0.0f;
-	mTimeInAir = 0.0f;
-	mSleepTime = 0.0f;
-	mDriftPhysics = false;
-
+void SuspensionSimpleMW::CreateTires() {
 	for (int i = 0; i < 4; ++i) {
 		bool is_front = IsFront(i);
 		float diameter = Physics::Info::WheelDiameter(mAttributes, is_front);
@@ -66,8 +43,41 @@ void SuspensionSimpleMW::Create(const BehaviorParams &bp) {
 	GetWheel(3).SetLocalArm(rr);
 }
 
+void SuspensionSimpleMW::Create(const BehaviorParams &bp) {
+	SUSPENSIONSIMPLE_FUNCTION_LOG("Create");
+
+	ChassisMW::Create(bp);
+
+	mChassisType = "SuspensionSimple";
+
+	*(uintptr_t*)this = (uintptr_t)&NewSuspensionSimpleMWVTable;
+
+	GetOwner()->QueryInterface(&mInput);
+	//GetOwner()->QueryInterface(&mCheater);
+	mFrictionBoost = 0.0f;
+	mDraft = 0.0f;
+	mPowerSliding = false;
+	mWheelSteer[0] = 0.0f;
+	mWheelSteer[1] = 0.0f;
+	mYawControlMultiplier = 0.0f;
+	mNumWheelsOnGround = 0;
+	mAgainstWall = 0.0f;
+	mMaxSteering = 0.0f;
+	mTimeInAir = 0.0f;
+	mSleepTime = 0.0f;
+	mDriftPhysics = false;
+
+	tmpCollisionListener = TempCollisionListener();
+	tmpCollisionListener.vtable = &tmpCollisionListener.vt_OnCollision;
+	Sim::Collision::AddListener((Sim::Collision::IListener*)&tmpCollisionListener, GetOwner(), "SuspensionSimpleMW");
+
+	CreateTires();
+}
+
 void SuspensionSimpleMW::Destroy(char a2) {
 	SUSPENSIONSIMPLE_FUNCTION_LOG("Destroy");
+
+	Sim::Collision::RemoveListener((Sim::Collision::IListener*)&tmpCollisionListener);
 
 	for (int i = 0; i < 4; ++i) {
 		WriteLog("delete mTires[i]");
@@ -191,10 +201,11 @@ void SuspensionSimpleMW::Reset() {
 }
 
 void SuspensionSimpleMW::OnCollision(const Sim::Collision::Info &cinfo) {
-	return; // todo!
-	//if (cinfo.type != Sim::Collision::Info::WORLD) {
-	//	return;
-	//}
+	auto a2 = (uintptr_t)&cinfo;
+	uint32_t cinfoType = (*(uint32_t*)(a2 + 0x1C) & 7);
+	if (cinfoType != Sim::Collision::Info::WORLD) {
+		return;
+	}
 	if ((UMath::Abs(cinfo.normal.y) < 0.1f) && (mAgainstWall == 0.0f) && mRBComplex) {
 		if (UMath::Length(cinfo.closingVel) < 7.5f) {
 			const UMath::Vector3 &vFoward = *mRB->GetForwardVector();
@@ -214,6 +225,10 @@ void SuspensionSimpleMW::OnCollision(const Sim::Collision::Info &cinfo) {
 			}
 		}
 	}
+}
+
+void SuspensionSimpleMW::TempCollisionListener::OnCollision(const Sim::Collision::Info *cinfo) {
+	return GetSuspensionRacer()->OnCollision(*cinfo);
 }
 
 void SuspensionSimpleMW::DoSteering(ChassisMW::State &state, UMath::Vector3 &right, UMath::Vector3 &left) {

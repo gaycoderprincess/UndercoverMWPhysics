@@ -1151,7 +1151,7 @@ void SuspensionRacerMW::TuneWheelParams(State &state) {
 			mTires[i]->SetTractionCircle(circle);
 		}
 		// traction is increased by perfect shifts in drag races and also by engaging the nitrous
-		mTires[i]->ScaleTractionBoost(state.nos_boost * state.shift_boost); // TODO might not match on MSVC
+		mTires[i]->ScaleTractionBoost(state.nos_boost * state.shift_boost);
 
 		// popped tires are permanently braking and have reduced traction
 		if ((1 << i) & state.blown_tires) {

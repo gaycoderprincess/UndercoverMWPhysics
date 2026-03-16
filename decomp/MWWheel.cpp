@@ -5,7 +5,7 @@ void WheelMW::UpdateSurface(const Attrib::Collection* surface) {
 }
 
 bool WheelMW::InitPosition(ICollisionBody* cb, IRigidBody *rb, double maxcompression) {
-	//FUNCTION_LOG("Wheel::InitPosition");
+	WHEEL_FUNCTION_LOG("Wheel::InitPosition");
 	auto mat = *rb->GetTransform();
 	mat.p = *rb->GetPosition();
 	UMath::Vector3 dim;

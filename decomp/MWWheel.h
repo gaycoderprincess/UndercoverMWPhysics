@@ -17,7 +17,7 @@ public:
 	UMath::Vector4 mIntegral;
 
 	WheelMW(unsigned int flags) {
-		CHASSIS_FUNCTION_LOG("Wheel::Wheel");
+		WHEEL_FUNCTION_LOG("Wheel::Wheel");
 		memset(this,0,sizeof(*this));
 		mFlags = flags;
 		Reset();
@@ -28,7 +28,7 @@ public:
 	}
 
 	void Reset() {
-		CHASSIS_FUNCTION_LOG("Wheel::Reset");
+		WHEEL_FUNCTION_LOG("Wheel::Reset");
 		mSurfaceStick = 0.0;
 		mIntegral.x = 0.0;
 		mIntegral.y = 0.0;

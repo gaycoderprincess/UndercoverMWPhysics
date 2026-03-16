@@ -89,7 +89,6 @@ public:
 
 	IChassis tmpChassis;
 
-	// hack around this enough so the compiler doesn't complain about the vtable being missing
 	IChassis* GetIChassis() { GET_FAKE_INTERFACE(ChassisMW, IChassis, tmpChassis) }
 
 	ISimable* GetOwner() const {
@@ -108,44 +107,6 @@ public:
 	int GetPriority() { CHASSIS_FUNCTION_LOG("GetPriority"); return mPriority; }
 	float GetDownCoefficient(float f) { CHASSIS_FUNCTION_LOG("GetDownCoefficient"); return GetIChassis()->GetDownCoefficient(); }
 	int OnService(HSIMSERVICE__* hCon, void* pkt) { return 0; }
-
-	// IChassis
-	//virtual float GetWheelTraction(uint32_t);
-	//virtual unsigned int GetNumWheels();
-	//virtual const UMath::Vector3* GetWheelPos(uint32_t);
-	//virtual const UMath::Vector3* GetWheelLocalPos(uint32_t);
-	//virtual UMath::Vector3* GetWheelCenterPos(UMath::Vector3*, uint32_t);
-	//virtual float GetWheelLoad(uint32_t);
-	//virtual void ApplyVehicleEntryForces(bool, const UMath::Vector3*, bool);
-	//virtual float GetWheelRoadHeight(uint32_t);
-	//virtual bool IsWheelOnGround(uint32_t);
-	//virtual float GetCompression(uint32_t);
-	//virtual Meters GuessCompression(uint32_t, float);
-	//virtual float GetWheelSlip(uint32_t);
-	//virtual float GetToleratedSlip(uint32_t);
-	//virtual float GetWheelSkid(uint32_t);
-	//virtual float GetWheelSlipAngle(uint32_t);
-	//virtual const UMath::Vector4* GetWheelRoadNormal(uint32_t);
-	//virtual const SimSurface* GetWheelRoadSurface(uint32_t);
-	//virtual const UMath::Vector3* GetWheelVelocity(uint32_t);
-	//virtual int GetNumWheelsOnGround();
-	//virtual float GetWheelAngularVelocity(uint32_t);
-	//virtual void SetWheelAngularVelocity(int, float);
-	//virtual float GetWheelSteer(uint32_t);
-	//virtual float CalculateUndersteerFactor();
-	//virtual float CalculateOversteerFactor();
-	//virtual Meters GetRideHeight(uint32_t idx);
-	//virtual float GetWheelRadius(uint32_t);
-	//virtual float GetMaxSteering();
-	//virtual void MatchSpeed(float);
-	//virtual float GetRenderMotion();
-
-	// UC stuff
-	//virtual float GetWheelTorque(int);
-	//virtual float GetWheelTorqueRatio(int);
-	//virtual float GetWheelBrakeTorque(int);
-	//virtual float GetWheelLateralForce(int);
-	//virtual void ForceCompression(int, float);
 
 	const char* mChassisType = "Chassis";
 };

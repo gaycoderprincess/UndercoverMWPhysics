@@ -94,6 +94,7 @@ class SuspensionSimpleMW : public ChassisMW {
 
 	void Create(const BehaviorParams &bp);
 	void Destroy(char a2);
+	void CreateTires();
 	void DoAerobatics(State &state);
 	void DoSteering(State &state, UMath::Vector3 &right, UMath::Vector3 &left);
 	void DoWallSteer(State &state);
@@ -142,6 +143,19 @@ class SuspensionSimpleMW : public ChassisMW {
 	float mSleepTime;
 	bool mDriftPhysics;
 	Tire *mTires[4];
+
+	struct TempCollisionListener {
+		void* vtable;
+		void* vt_OnCollision = (void*)&TempCollisionListener::OnCollision;
+
+		SuspensionSimpleMW* GetSuspensionRacer() {
+			auto ptr = (uintptr_t)this;
+			ptr -= offsetof(SuspensionSimpleMW, tmpCollisionListener);
+			return (SuspensionSimpleMW*)ptr;
+		}
+
+		void OnCollision(const Sim::Collision::Info *cinfo);
+	} tmpCollisionListener;
 
 	float GetDriftValue() { SUSPENSIONSIMPLE_FUNCTION_LOG("GetDriftValue"); return 0.0; }
 	void ApplyVehicleEntryForces(bool enteringVehicle, const UMath::Vector3 *pos, bool calledfromEvent) { SUSPENSIONSIMPLE_FUNCTION_LOG("ApplyVehicleEntryForces");  }
