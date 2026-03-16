@@ -304,7 +304,6 @@ void ChassisMW::SetCOG(float extra_bias, float extra_ride) {
 	UMath::Vector3 cog(0.0f, cg_y, cg_z);
 	mRB->SetCenterOfGravity(&cog);
 	mRB->OverrideCOG(&cog);
-	return;
 }
 
 void ChassisMW::ComputeState(float dT, ChassisMW::State &state) {
