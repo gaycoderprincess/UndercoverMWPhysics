@@ -65,9 +65,11 @@ auto dtor_simobject = (void(__thiscall*)(void*))0x7BC8A0;
 
 #include "decomp/ConversionUtil.h"
 #include "decomp/UMathExtras.h"
-#include "MWCarTuning.h"
 #include "decomp/AverageWindow.h"
 #include "decomp/MWICheaterDummy.h"
+
+#include "MWCarTuning.h"
+
 #include "decomp/behaviors/MWWheel.h"
 #include "decomp/behaviors/MWChassisBase.h"
 #include "decomp/behaviors/SuspensionRacer.h"
@@ -411,7 +413,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
 			NyaHookLib::PatchRelative(NyaHookLib::CALL, 0x6F07D2, &LookupBehaviorSignatureHooked);
 
 			// AIVehicle::GetOverSteerCorrection, disable road surface getter during race cutscenes
-			NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x40AAC8, 0x40AB89);
+			//NyaHookLib::PatchRelative(NyaHookLib::JMP, 0x40AAC8, 0x40AB89);
 			NyaHookLib::Patch<uint16_t>(0x40AAC2, 0xE8D9); // fld1
 
 			if (std::filesystem::exists("NFSUCMWPhysics_gcp.toml")) {

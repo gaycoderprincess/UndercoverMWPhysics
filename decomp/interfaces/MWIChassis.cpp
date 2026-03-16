@@ -122,12 +122,15 @@ namespace MWIChassis {
 	}
 	float __thiscall GetWheelSlipRatio(uintptr_t ptr, unsigned int index) { // todo this is weird
 		ICHASSIS_FUNCTION_LOG("GetWheelSlipRatio");
+		float traction = 1.0;
 		if (IsChassisSimple(ptr)) {
-			return 1.0 - GetSuspensionSimple(ptr)->mTires[index]->mTraction;
+			traction = GetSuspensionSimple(ptr)->mTires[index]->mTraction;
 		}
 		else {
-			return 1.0 - GetSuspensionRacer(ptr)->GetWheelTraction(index);
+			traction = GetSuspensionRacer(ptr)->GetWheelTraction(index);
 		}
+		traction *= 1.25; // a bit of leeway so turning doesn't immediately make skidmarks
+		return UMath::Clamp(1.0f - traction, 0.0f, 1.0f);
 	}
 	float __thiscall GetDragBoost(uintptr_t ptr) {
 		ICHASSIS_FUNCTION_LOG("GetDragBoost");
@@ -176,7 +179,7 @@ namespace MWIChassis {
 	float __thiscall GetWheelBrakeTorque(uintptr_t ptr, unsigned int i) {
 		ICHASSIS_FUNCTION_LOG("GetWheelBrakeTorque");
 		if (IsChassisSimple(ptr)) {
-			return 0.0; // todo
+			return 0.0;
 		}
 		else {
 			return GetSuspensionRacer(ptr)->GetWheelBrakeTorque(i);
@@ -326,7 +329,7 @@ namespace MWIChassis {
 	float __thiscall GetWheelAngularVelocity(uintptr_t ptr, int index) {
 		ICHASSIS_FUNCTION_LOG("GetWheelAngularVelocity");
 		if (IsChassisSimple(ptr)) {
-			return GetSuspensionSimple(ptr)->mTires[index]->mAV; // todo
+			return GetSuspensionSimple(ptr)->mTires[index]->mAV;
 		}
 		else {
 			return GetSuspensionRacer(ptr)->GetWheelAngularVelocity(index);
