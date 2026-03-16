@@ -130,7 +130,7 @@ class SuspensionSimpleMW : public ChassisMW {
 	}
 
 	IInput *mInput;
-	MWCheater *mCheater;
+	MWICheater *mCheater;
 	float mFrictionBoost;
 	float mDraft;
 	bool mPowerSliding;
